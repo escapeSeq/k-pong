@@ -1,0 +1,96 @@
+.game-container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  cursor: none;
+  background-color: #000;
+}
+
+.score-board {
+  display: flex;
+  justify-content: center;
+  gap: 4rem;
+  font-size: 3rem;
+  margin: 1rem;
+  font-family: 'Press Start 2P', monospace;
+  color: #0f0;
+}
+
+canvas {
+  border: 2px solid #00ff00;
+  background-color: #000;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+  touch-action: none;
+  user-select: none;
+}
+
+dialog {
+  padding: 2rem;
+  border: 2px solid #00ff00;
+  border-radius: 8px;
+  background: #000;
+  color: #fff;
+  font-family: 'Press Start 2P', monospace;
+}
+
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+dialog input {
+  display: block;
+  margin: 1rem 0;
+  padding: 0.5rem;
+  width: 100%;
+  background: #111;
+  border: 1px solid #00ff00;
+  color: #fff;
+  border-radius: 4px;
+  font-family: 'Press Start 2P', monospace;
+}
+
+dialog .buttons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-top: 2rem;
+}
+
+dialog button {
+  font-size: 1rem;
+  padding: 0.8rem 1.5rem;
+  font-family: 'Press Start 2P', monospace;
+  background: #00ff00;
+  border: none;
+  border-radius: 4px;
+  color: #000;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+dialog button:hover {
+  transform: scale(1.05);
+  background: #00dd00;
+  box-shadow: 0 0 15px #0f0;
+}
+
+.player-names {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20%;
+  font-family: 'Press Start 2P', monospace;
+  color: #0f0;
+  font-size: 16px;
+}
+
+.player-names span {
+  text-shadow: 0 0 5px #0f0;
+} 
