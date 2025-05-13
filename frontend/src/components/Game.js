@@ -205,8 +205,10 @@ const Game = ({ gameState, onUsernameSet, username }) => {
       if (!isMounted.current) return;
       console.log('Socket connected with ID:', newSocket.id, 'Username:', username);
       
-      // Play load sound when connection is established
-      soundManager.playLoadSound();
+      soundManager.playWithErrorHandling(
+        () => soundManager.playLoadSound(),
+        'Connection sound failed to play'
+      );
 
       const playerData = {
         name: username,
@@ -258,14 +260,20 @@ const Game = ({ gameState, onUsernameSet, username }) => {
       try {
         // Check if ball hit a paddle by comparing with previous position
         if (data?.ballVelocity?.x !== prevGameDataRef.current?.ballVelocity?.x) {
-          soundManager.playHitSound();
+          soundManager.playWithErrorHandling(
+            () => soundManager.playHitSound(),
+            'Hit sound failed to play'
+          );
         }
         
         // Check if score changed
         if (data?.score && prevGameDataRef.current?.score &&
             (data.score[0] !== prevGameDataRef.current.score[0] || 
              data.score[1] !== prevGameDataRef.current.score[1])) {
-          soundManager.playScoreSound();
+          soundManager.playWithErrorHandling(
+            () => soundManager.playScoreSound(),
+            'Score sound failed to play'
+          );
         }
       } catch (error) {
         console.error('Error processing game update:', error);
@@ -276,9 +284,13 @@ const Game = ({ gameState, onUsernameSet, username }) => {
     });
 
     newSocket.on('gameOver', (result) => {
-      // Play game over sound before stopping background music
-      soundManager.playGameOverSound();
-      setTimeout(() => soundManager.stopAll(), 1000); // Stop other sounds after game over sound plays
+      soundManager.playWithErrorHandling(
+        async () => {
+          await soundManager.playGameOverSound();
+          setTimeout(() => soundManager.stopAll(), 1000);
+        },
+        'Game over sound failed to play'
+      );
       
       if (!isMounted.current) return;
       
@@ -440,8 +452,17 @@ const Game = ({ gameState, onUsernameSet, username }) => {
 
   // Add sound initialization
   useEffect(() => {
-    soundManager.startBackgroundMusic();
-    return () => soundManager.stopAll();
+    soundManager.playWithErrorHandling(
+      () => soundManager.startBackgroundMusic(),
+      'Background music failed to start'
+    );
+    return () => {
+      try {
+        soundManager.stopAll();
+      } catch (error) {
+        console.warn('Failed to stop sounds:', error);
+      }
+    };
   }, []);
 
   return (

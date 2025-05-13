@@ -14,9 +14,23 @@ class SoundManager {
     this.bgMusic.play();
   }
 
+  async playWithErrorHandling(playFunction, fallbackMessage = '') {
+    try {
+      await playFunction();
+    } catch (error) {
+      console.warn(`Sound playback failed: ${fallbackMessage}`, error);
+      // Optionally disable future sound attempts if needed
+    }
+  }
+
   playHitSound() {
-    this.hitSound.currentTime = 0;
-    this.hitSound.play();
+    return this.playWithErrorHandling(
+      () => {
+        this.hitSound.currentTime = 0;
+        this.hitSound.play();
+      },
+      'Hit sound failed'
+    );
   }
 
   playScoreSound() {
@@ -25,8 +39,13 @@ class SoundManager {
   }
 
   playLoadSound() {
-    this.loadSound.currentTime = 0;
-    this.loadSound.play();
+    return this.playWithErrorHandling(
+      () => {
+        this.loadSound.currentTime = 0;
+        this.loadSound.play();
+      },
+      'Load sound failed'
+    );
   }
 
   playGameOverSound() {

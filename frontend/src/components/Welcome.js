@@ -47,22 +47,13 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
 
   // Add effect for title animation and sound
   useEffect(() => {
-    // Small delay to ensure DOM is ready
     const timer = setTimeout(() => {
       setShowTitle(true);
       
-      // Try to play sound immediately
-      soundManager.playIntroSound().catch(() => {
-        // If autoplay fails, set up click listener as fallback
-        const playSound = () => {
-          soundManager.playIntroSound();
-          document.removeEventListener('click', playSound);
-        };
-        document.addEventListener('click', playSound);
-        return () => {
-          document.removeEventListener('click', playSound);
-        };
-      });
+      soundManager.playWithErrorHandling(
+        () => soundManager.playIntroSound(),
+        'Intro sound failed to play'
+      );
     }, 100);
 
     return () => clearTimeout(timer);
