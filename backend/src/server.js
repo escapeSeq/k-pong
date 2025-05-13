@@ -17,7 +17,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // More permissive CORS for Docker environment
 app.use(cors({
-  origin: 'http://localhost:3000',
+  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
   credentials: true,
   methods: ['GET', 'POST', 'OPTIONS']
 }));
@@ -26,7 +26,7 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: 'http://localhost:3000',
+    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
     methods: ['GET', 'POST'],
     credentials: true,
     allowedHeaders: ['*']
