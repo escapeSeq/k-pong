@@ -3,7 +3,7 @@ auto_start_machines = true
 auto_stop_machines = true
 force_https = true
 internal_port = 8080
-min_machines_running = 0
+min_machines_running = 1
 processes = [ "app" ]
 
 [[services]]
@@ -12,3 +12,12 @@ processes = [ "app" ]
 
   [[services.ports]]
     port = 8080  # External/public port
+
+[checks]
+  [checks.http]
+    path = "/health"
+    method = "get"
+    interval = "10s"
+    timeout = "2s"
+    grace_period = "5s"
+    restart_limit = 0
