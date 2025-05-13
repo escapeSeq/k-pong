@@ -8,8 +8,9 @@ primary_region = 'arn'
 
 [build]
 
+
 [http_service]
-  internal_port = 5000
+  internal_port = 8080
   force_https = true
   auto_stop_machines = 'stop'
   auto_start_machines = true
@@ -17,7 +18,7 @@ primary_region = 'arn'
   processes = ['app']
 
 [[services.ports]]
-    port = 5000  # External/public port
+    port = 8080  # External/public port
 
 [[vm]]
   memory = '1gb'
