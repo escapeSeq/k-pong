@@ -17,20 +17,20 @@
   font-size: 3rem;
   margin: 1rem;
   font-family: 'Press Start 2P', monospace;
-  color: #0f0;
+  color: rgb(116,113,203);
 }
 
 canvas {
-  border: 2px solid #00ff00;
+  border: 2px solid rgb(116,113,203);
   background-color: #000;
-  box-shadow: 0 0 20px rgba(0, 255, 0, 0.2);
+  box-shadow: 0 0 20px rgba(116,113,203, 0.2);
   touch-action: none;
   user-select: none;
 }
 
 dialog {
   padding: 2rem;
-  border: 2px solid #00ff00;
+  border: 2px solid rgb(116,113,203);
   border-radius: 8px;
   background: #000;
   color: #fff;
@@ -47,7 +47,7 @@ dialog input {
   padding: 0.5rem;
   width: 100%;
   background: #111;
-  border: 1px solid #00ff00;
+  border: 1px solid rgb(116,113,203);
   color: #fff;
   border-radius: 4px;
   font-family: 'Press Start 2P', monospace;
@@ -64,7 +64,7 @@ dialog button {
   font-size: 1rem;
   padding: 0.8rem 1.5rem;
   font-family: 'Press Start 2P', monospace;
-  background: #00ff00;
+  background: rgb(116,113,203);
   border: none;
   border-radius: 4px;
   color: #000;
@@ -74,8 +74,8 @@ dialog button {
 
 dialog button:hover {
   transform: scale(1.05);
-  background: #00dd00;
-  box-shadow: 0 0 15px #0f0;
+  background: rgba(116,113,203, 0.8);
+  box-shadow: 0 0 15px rgb(116,113,203);
 }
 
 .player-names {
@@ -87,10 +87,10 @@ dialog button:hover {
   justify-content: space-between;
   padding: 0 20%;
   font-family: 'Press Start 2P', monospace;
-  color: #0f0;
+  color: rgb(116,113,203);
   font-size: 16px;
 }
 
 .player-names span {
-  text-shadow: 0 0 5px #0f0;
+  text-shadow: 0 0 5px rgb(116,113,203);
 } 

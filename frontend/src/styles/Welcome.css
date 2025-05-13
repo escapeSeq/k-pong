@@ -24,10 +24,10 @@
 .game-title {
   font-family: 'Press Start 2P', monospace;
   font-size: 4rem;
-  color: #0f0;
-  text-shadow: 0 0 10px #0f0,
-               0 0 20px #0f0,
-               0 0 30px #0f0;
+  color: rgb(116,113,203);
+  text-shadow: 0 0 10px rgb(116,113,203),
+               0 0 20px rgb(116,113,203),
+               0 0 30px rgb(116,113,203);
   animation: pulse 2s infinite;
   margin: 0;
   padding: 2rem;
@@ -36,20 +36,20 @@
 
 @keyframes pulse {
   0% {
-    text-shadow: 0 0 10px #0f0,
-                 0 0 20px #0f0,
-                 0 0 30px #0f0;
+    text-shadow: 0 0 10px rgb(116,113,203),
+                 0 0 20px rgb(116,113,203),
+                 0 0 30px rgb(116,113,203);
   }
   50% {
-    text-shadow: 0 0 15px #0f0,
-                 0 0 25px #0f0,
-                 0 0 35px #0f0,
-                 0 0 45px #0f0;
+    text-shadow: 0 0 15px rgb(116,113,203),
+                 0 0 25px rgb(116,113,203),
+                 0 0 35px rgb(116,113,203),
+                 0 0 45px rgb(116,113,203);
   }
   100% {
-    text-shadow: 0 0 10px #0f0,
-                 0 0 20px #0f0,
-                 0 0 30px #0f0;
+    text-shadow: 0 0 10px rgb(116,113,203),
+                 0 0 20px rgb(116,113,203),
+                 0 0 30px rgb(116,113,203);
   }
 }
 
@@ -64,7 +64,7 @@
 button {
   padding: 1rem 2rem;
   font-size: 1.5rem;
-  background: #00ff00;
+  background: rgb(116,113,203);
   border: none;
   border-radius: 4px;
   color: #000;
@@ -76,21 +76,21 @@ button {
 
 button:hover {
   transform: scale(1.05);
-  background: #00dd00;
-  box-shadow: 0 0 15px #0f0;
+  background: rgba(116,113,203, 0.8);
+  box-shadow: 0 0 15px rgb(116,113,203);
 }
 
 .instructions, .rankings {
   background: rgba(255, 255, 255, 0.1);
   padding: 1.5rem;
   border-radius: 8px;
-  border: 2px solid #0f0;
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.2);
+  border: 2px solid rgb(116,113,203);
+  box-shadow: 0 0 10px rgba(116,113,203, 0.2);
 }
 
 dialog {
   padding: 2rem;
-  border: 2px solid #00ff00;
+  border: 2px solid rgb(116,113,203);
   border-radius: 8px;
   background: #000;
   color: #fff;
@@ -107,7 +107,7 @@ dialog input {
   padding: 0.5rem;
   width: 100%;
   background: #111;
-  border: 1px solid #00ff00;
+  border: 1px solid rgb(116,113,203);
   color: #fff;
   border-radius: 4px;
   font-family: 'Press Start 2P', monospace;
@@ -126,7 +126,7 @@ dialog button {
 }
 
 h2 {
-  color: #0f0;
+  color: rgb(116,113,203);
   margin-bottom: 1rem;
   font-family: 'Press Start 2P', monospace;
 }
@@ -140,7 +140,7 @@ p {
 
 .rankings-list {
   margin-top: 1rem;
-  background: rgba(0, 255, 0, 0.1);
+  background: rgba(116,113,203, 0.1);
   border-radius: 8px;
   padding: 1rem;
 }
@@ -150,7 +150,7 @@ p {
   grid-template-columns: 40px 1fr 80px;
   gap: 1rem;
   padding: 0.5rem;
-  border-bottom: 1px solid rgba(0, 255, 0, 0.2);
+  border-bottom: 1px solid rgba(116,113,203, 0.2);
   font-family: 'Press Start 2P', monospace;
   font-size: 0.8rem;
 }
@@ -160,7 +160,7 @@ p {
 }
 
 .rank {
-  color: #0f0;
+  color: rgb(116,113,203);
   text-align: center;
 }
 
@@ -173,5 +173,5 @@ p {
 
 .rating {
   text-align: right;
-  color: #0f0;
+  color: rgb(116,113,203);
 } 

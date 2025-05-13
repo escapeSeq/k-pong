@@ -38,7 +38,7 @@ const Game = ({ gameState, onUsernameSet, username }) => {
     
     if (isWaiting) {
       ctx.font = '24px "Press Start 2P"';
-      ctx.fillStyle = '#0f0';
+      ctx.fillStyle = 'rgb(116,113,203)';
       ctx.textAlign = 'center';
       const dots = '.'.repeat(Math.floor(Date.now() / 500) % 4);
       ctx.fillText(`Waiting for opponent${dots}`, ctx.canvas.width / 2, ctx.canvas.height / 2);
@@ -47,9 +47,9 @@ const Game = ({ gameState, onUsernameSet, username }) => {
     
     const { width, height } = ctx.canvas;
     ctx.imageSmoothingEnabled = true;
-    ctx.fillStyle = '#0f0';
 
-    // Draw paddles
+    // Draw paddles (keeping the original color)
+    ctx.fillStyle = 'rgb(116,113,203)';
     const paddleWidth = width * 0.02;
     const paddleHeight = height * 0.2;
     
@@ -59,7 +59,8 @@ const Game = ({ gameState, onUsernameSet, username }) => {
       ctx.fillRect(x, y, paddleWidth, paddleHeight);
     });
 
-    // Draw ball
+    // Draw ball with new color
+    ctx.fillStyle = 'rgb(253,208,64)';
     const ballSize = width * 0.02;
     const ballX = (gameData.ballPos.x + 1) * width / 2 - ballSize / 2;
     const ballY = (gameData.ballPos.y + 1) * height / 2 - ballSize / 2;

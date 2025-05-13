@@ -1,11 +1,11 @@
 class SoundManager {
   constructor() {
-    this.bgMusic = new Audio('/sounds/background.mp3');
-    this.hitSound = new Audio('/sounds/hit.mp3');
-    this.scoreSound = new Audio('/sounds/score.mp3');
-    this.loadSound = new Audio('/sounds/load.mp3');
-    this.gameOverSound = new Audio('/sounds/gameover.mp3');
-    this.introSound = new Audio('/sounds/intro.mp3');
+    this.bgMusic = new Audio('/sounds/background2.mp3');
+    this.hitSound = new Audio('/sounds/hit2.mp3');
+    this.scoreSound = new Audio('/sounds/score2.mp3');
+    this.loadSound = new Audio('/sounds/load2.mp3');
+    this.gameOverSound = new Audio('/sounds/gameover3.mp3');
+    this.introSound = new Audio('/sounds/intro2.mp3');
     
     this.bgMusic.loop = true;
   }

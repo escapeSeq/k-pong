@@ -41,7 +41,7 @@ http://localhost:3000
 
 - Use the left and right arrow keys to move the paddle
 - Try to hit the ball past your opponent's paddle
-- First to score 10 points wins
+- First to score 5 points wins
 
 3. Game Over:
 

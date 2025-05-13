@@ -297,7 +297,7 @@ class GameHandlers {
       }
 
       // Check for game end
-      if (Math.max(...game.score) >= 11) {
+      if (Math.max(...game.score) >= 5) {
         const winner = game.players[game.score[0] > game.score[1] ? 0 : 1];
         this.endGame(gameId, winner);
         return;
