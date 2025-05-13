@@ -1,4 +1,4 @@
-# fly.toml app configuration file generated for k-pong-backend on 2025-05-13T18:41:06Z
+# fly.toml app configuration file generated for k-pong-backend on 2025-05-13T18:55:18Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
@@ -15,15 +15,6 @@ primary_region = 'arn'
   auto_start_machines = true
   min_machines_running = 0
   processes = ['app']
-
-[[services]]
-  internal_port = 8080
-  protocol = "tcp"
-
-  [[services.ports]]
-    handlers = ["tls", "http"]
-    port = 8080  # External/public port
-
 
 [[vm]]
   memory = '1gb'
