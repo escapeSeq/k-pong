@@ -80,8 +80,7 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
         <h2>Enter Your Username</h2>
         <input type="text" id="username" required minlength="2" maxlength="15">
         <div class="buttons">
-          <button type="submit">Random Opponent</button>
-          <button type="button" id="inviteBtn">Send Invite</button>
+          <button type="submit">Start Game</button>
         </div>
       </form>
     `;
@@ -102,23 +101,6 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
       }));
       navigate('/game');
       modal.remove();
-    };
-
-    modal.querySelector('#inviteBtn').onclick = () => {
-      const username = document.getElementById('username').value;
-      if (username.length >= 2) {
-        onUsernameSet(username); // Use the passed handler
-        setGameState(prev => ({
-          ...prev,
-          player1: {
-            name: username,
-            rating: 800
-          },
-          gameMode: 'invite'
-        }));
-        navigate('/game');
-        modal.remove();
-      }
     };
   };
 

@@ -5,6 +5,9 @@ import '../styles/Game.css';
 import { STORAGE_KEY, BACKEND_URL, INITIAL_RATING } from '../constants';
 import soundManager from '../utils/soundManager';
 
+// Add this outside of any component, at the top of the file
+let usernamePromptShownForSession = false;
+
 const Game = ({ gameState, onUsernameSet, username }) => {
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
@@ -32,6 +35,8 @@ const Game = ({ gameState, onUsernameSet, username }) => {
 
   // Add ref for tracking mouse movement
   const containerRef = useRef(null);
+
+  const [usernamePromptShown, setUsernamePromptShown] = useState(false);
 
   const drawGame = useCallback((ctx) => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -364,48 +369,6 @@ const Game = ({ gameState, onUsernameSet, username }) => {
     };
   }, [cleanupSocket, isConnecting, navigate]);
 
-  const showUsernameModal = useCallback(() => {
-    if (modalRef.current) {
-      modalRef.current.remove();
-      modalRef.current = null;
-    }
-
-    const modal = document.createElement('dialog');
-    modalRef.current = modal;
-    modal.className = 'username-modal';
-    modal.innerHTML = `
-      <form>
-        <h2>Enter Username</h2>
-        <input type="text" id="username" minlength="2" required placeholder="Username" />
-        <div class="buttons">
-          <button type="submit">Play</button>
-        </div>
-      </form>
-    `;
-
-    document.body.appendChild(modal);
-    modal.showModal();
-
-    const cleanup = () => {
-      if (modalRef.current === modal) {
-        modal.remove();
-        modalRef.current = null;
-      }
-    };
-
-    modal.querySelector('form').onsubmit = (e) => {
-      e.preventDefault();
-      const username = document.getElementById('username').value;
-      if (username.length >= 2) {
-        localStorage.setItem(STORAGE_KEY, username);
-        cleanup();
-        setupSocket(username);
-      }
-    };
-
-    return cleanup;
-  }, [setupSocket]);
-
   // Setup keyboard listeners
   useEffect(() => {
     window.addEventListener('keydown', handleKeyPress);
@@ -459,21 +422,18 @@ const Game = ({ gameState, onUsernameSet, username }) => {
   // Update the main useEffect
   useEffect(() => {
     isMounted.current = true;
-    let cleanup = null;
     
     const initGame = async () => {
       if (!socketRef.current && !isConnecting) {
+        // Just use the provided username from props - don't show a modal
         if (username) {
           console.log('Using provided username:', username);
           await setupSocket(username);
         } else {
-          const savedUsername = localStorage.getItem(STORAGE_KEY);
-          if (savedUsername) {
-            console.log('Using saved username:', savedUsername);
-            await setupSocket(savedUsername);
-          } else {
-            cleanup = showUsernameModal();
-          }
+          // If no username provided, we'll use a guest name
+          const guestName = 'Guest_' + Math.floor(Math.random() * 1000);
+          console.log('No username provided, using guest name:', guestName);
+          await setupSocket(guestName);
         }
       }
     };
@@ -482,7 +442,6 @@ const Game = ({ gameState, onUsernameSet, username }) => {
 
     return () => {
       isMounted.current = false;
-      if (cleanup) cleanup();
       if (modalRef.current) {
         modalRef.current.remove();
         modalRef.current = null;
@@ -490,7 +449,7 @@ const Game = ({ gameState, onUsernameSet, username }) => {
       prevGameDataRef.current = null; // Clear the previous game data
       cleanupSocket();
     };
-  }, [setupSocket, showUsernameModal, cleanupSocket, isConnecting, username]);
+  }, [setupSocket, cleanupSocket, isConnecting, username]);
 
   // Add sound initialization
   useEffect(() => {
