@@ -6,6 +6,11 @@
 app = 'k-pong-player-serivce'
 primary_region = 'arn'
 
+[env]
+  PORT = "5001"
+  MONGODB_URI = "mongodb://mongo:27017/kpong-players"
+  FRONTEND_URL = "https://k-pong.fly.dev"
+
 [build]
 
 [http_service]
