@@ -369,7 +369,21 @@ class GameHandlers {
     const game = this.games.get(gameId);
     if (!game) return;
 
+    // Safeguard against invalid winner object
+    if (!winner || !winner.name) {
+      console.error('Invalid winner object:', winner);
+      this.games.delete(gameId);
+      return;
+    }
+
     const loser = game.players.find(p => p.socketId !== winner.socketId);
+    
+    // Safeguard against invalid loser object
+    if (!loser || !loser.name) {
+      console.error('Invalid loser object:', loser);
+      this.games.delete(gameId);
+      return;
+    }
     
     // Get current ratings from the playerRankings map using player names
     const currentWinnerRating = this.playerRankings.get(winner.name)?.rating || 1000;
@@ -382,8 +396,16 @@ class GameHandlers {
       currentLoserRating
     });
     
-    const newWinnerRating = calculateElo(currentWinnerRating, currentLoserRating, 'win');
-    const newLoserRating = calculateElo(currentLoserRating, currentWinnerRating, 'loss');
+    // Try to get new ratings but with error handling
+    let newWinnerRating, newLoserRating;
+    try {
+      newWinnerRating = calculateElo(currentWinnerRating, currentLoserRating, 'win');
+      newLoserRating = calculateElo(currentLoserRating, currentWinnerRating, 'loss');
+    } catch (error) {
+      console.error('Error calculating ELO:', error);
+      newWinnerRating = currentWinnerRating;
+      newLoserRating = currentLoserRating;
+    }
     
     console.log('Calculated new ratings:', {
       winner: winner.name,
@@ -406,24 +428,28 @@ class GameHandlers {
     this.updatePlayerRanking(winner.name, finalWinnerRating);
     this.updatePlayerRanking(loser.name, newLoserRating);
 
-    // Emit updated rankings to all clients
-    this.io.emit('rankingsUpdate', this.getTopPlayers());
+    try {
+      // Emit updated rankings to all clients
+      this.io.emit('rankingsUpdate', this.getTopPlayers());
 
-    // Send game over event with all relevant data
-    this.io.to(gameId).emit('gameOver', {
-      winner: winner.socketId,
-      ratings: {
-        [winner.socketId]: finalWinnerRating,
-        [loser.socketId]: newLoserRating
-      },
-      stats: {
-        duration: Date.now() - game.startTime,
-        maxSpeed: Math.max(Math.abs(game.ballVelocity.x), Math.abs(game.ballVelocity.y)),
-        hits: game.hits || 0,
-        score: game.score
-      },
-      finalScore: game.score
-    });
+      // Send game over event with all relevant data
+      this.io.to(gameId).emit('gameOver', {
+        winner: winner.socketId,
+        ratings: {
+          [winner.socketId]: finalWinnerRating,
+          [loser.socketId]: newLoserRating
+        },
+        stats: {
+          duration: Date.now() - game.startTime,
+          maxSpeed: Math.max(Math.abs(game.ballVelocity.x || 0), Math.abs(game.ballVelocity.y || 0)),
+          hits: game.hits || 0,
+          score: game.score || [0, 0]
+        },
+        finalScore: game.score || [0, 0]
+      });
+    } catch (error) {
+      console.error('Error emitting game end events:', error);
+    }
 
     // Clean up game
     this.games.delete(gameId);
