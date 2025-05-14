@@ -93,4 +93,30 @@ dialog button:hover {
 
 .player-names span {
   text-shadow: 0 0 5px rgb(116,113,203);
+}
+
+@media (max-width: 768px) {
+  .game-container {
+    width: 100%;
+    height: 100vh;
+    touch-action: none;
+  }
+  
+  canvas {
+    width: 100%;
+    height: 70vh;
+    touch-action: none;
+  }
+  
+  .player-names, .score-board {
+    font-size: 16px;
+  }
+}
+
+/* This helps prevent unwanted scrolling or zooming while playing */
+body.playing {
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
 } 

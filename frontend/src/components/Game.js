@@ -138,6 +138,33 @@ const Game = ({ gameState, onUsernameSet, username }) => {
     socketRef.current.emit('paddleMove', { position: clampedY });
   }, [isWaiting]);
 
+  // Add touch movement handler
+  const handleTouchMove = useCallback((e) => {
+    if (!socketRef.current || isWaiting) return;
+    
+    // Prevent scrolling when playing the game
+    e.preventDefault();
+
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Get container bounds
+    const bounds = container.getBoundingClientRect();
+    
+    // Use the first touch point
+    if (e.touches && e.touches.length > 0) {
+      // Calculate relative Y position (-1 to 1)
+      const touchY = e.touches[0].clientY;
+      const relativeY = ((touchY - bounds.top) / bounds.height) * 2 - 1;
+      
+      // Clamp the value between -1 and 1
+      const clampedY = Math.max(-1, Math.min(1, relativeY));
+      
+      // Emit paddle movement
+      socketRef.current.emit('paddleMove', { position: clampedY });
+    }
+  }, [isWaiting]);
+
   const testBackendConnection = async () => {
     try {
       const response = await fetch(`${BACKEND_URL || 'http://localhost:5000'}/health`);
@@ -414,6 +441,21 @@ const Game = ({ gameState, onUsernameSet, username }) => {
     };
   }, [handleMouseMove]);
 
+  // Add touch event listeners
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Add mouse and touch event listeners
+    container.addEventListener('mousemove', handleMouseMove);
+    container.addEventListener('touchmove', handleTouchMove, { passive: false });
+    
+    return () => {
+      container.removeEventListener('mousemove', handleMouseMove);
+      container.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [handleMouseMove, handleTouchMove]);
+
   // Update the main useEffect
   useEffect(() => {
     isMounted.current = true;
@@ -465,8 +507,21 @@ const Game = ({ gameState, onUsernameSet, username }) => {
     };
   }, []);
 
+  // Add this inside your existing useEffect for game setup
+  useEffect(() => {
+    // Add 'playing' class to body when game starts
+    if (!isWaiting) {
+      document.body.classList.add('playing');
+    }
+    
+    return () => {
+      // Remove 'playing' class when component unmounts
+      document.body.classList.remove('playing');
+    };
+  }, [isWaiting]);
+
   return (
-    <div className="game-container" ref={containerRef}>
+    <div className="game-container" ref={containerRef} style={{ touchAction: 'none' }}>
       <div className="player-names">
         <span>{gameData.players[0]?.name || 'Player 1'}</span>
         <span>{gameData.players[1]?.name || 'Player 2'}</span>
