@@ -10,8 +10,5 @@ RUN npm install
 COPY public/ public/
 COPY src/ src/
 
-# Copy other necessary files
-COPY .env ./
-
 EXPOSE 3000
 CMD ["npm", "start"] 
