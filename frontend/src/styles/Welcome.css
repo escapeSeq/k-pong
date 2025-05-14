@@ -2,10 +2,14 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem;
-  height: 100vh;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 2rem 1rem;
   background-color: #000;
-  overflow: hidden;
+  color: white;
+  text-align: center;
+  overflow-y: auto;
+  max-height: 100vh;
 }
 
 .title-container {
@@ -57,8 +61,11 @@
   display: flex;
   flex-direction: column;
   gap: 2rem;
-  max-width: 600px;
   width: 100%;
+  max-width: 800px;
+  margin-top: 2rem;
+  padding-bottom: 2rem;
+  overflow-y: visible;
 }
 
 button {
@@ -77,7 +84,7 @@ button {
 button:hover {
   transform: scale(1.05);
   background: rgba(116,113,203, 0.8);
-  box-shadow: 0 0 15px rgb(116,113,203);
+  box-shadow: 0 0 15px rgba(116,113,203, 0.2);
 }
 
 .instructions, .rankings {
@@ -95,6 +102,7 @@ dialog {
   background: #000;
   color: #fff;
   font-family: 'Press Start 2P', monospace;
+  box-shadow: 0 0 15px rgba(116, 113, 203, 0.2);
 }
 
 dialog::backdrop {
@@ -138,40 +146,181 @@ p {
   line-height: 1.5;
 }
 
+/* Reset and redefine rankings container - remove background and border */
+.rankings {
+  width: 100%;
+  max-width: 600px;
+  margin: 20px auto;
+  background-color: transparent !important;
+  padding: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Apply consistent fonts to all ranking elements */
+.rankings h2,
+.rank,
+.name,
+.rating,
+.stats,
+.no-rankings {
+  font-family: 'Press Start 2P', monospace !important; /* Ensure consistent pixelated font */
+}
+
+/* Rankings title - match How to Play heading */
+.rankings h2 {
+  color: rgb(116, 113, 203);
+  margin-bottom: 15px;
+  font-size: 1.2rem !important;
+  text-transform: uppercase;
+  letter-spacing: 1px !important;
+}
+
+/* Rankings list - the container for all player entries */
 .rankings-list {
-  margin-top: 1rem;
-  background: rgba(116,113,203, 0.1);
-  border-radius: 8px;
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
 }
 
+/* Individual player box - ONE box per player, no border or background */
 .ranking-item {
-  display: grid;
-  grid-template-columns: 40px 1fr 80px;
-  gap: 1rem;
-  padding: 0.5rem;
-  border-bottom: 1px solid rgba(116,113,203, 0.2);
-  font-family: 'Press Start 2P', monospace;
-  font-size: 0.8rem;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  background-color: transparent !important; /* Remove background */
+  border: none !important; /* Remove border */
+  padding: 12px 15px !important;
+  width: 100% !important;
+  height: 45px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
-.ranking-item:last-child {
-  border-bottom: none;
-}
-
+/* Rank number */
 .rank {
-  color: rgb(116,113,203);
-  text-align: center;
+  flex: 0 0 30px !important;
+  color: rgb(116, 113, 203) !important;
+  font-weight: normal !important; /* Match How to Play font weight */
+  font-size: 0.7rem !important; /* Match How to Play text size */
+  text-align: center !important;
 }
 
+/* Player name */
 .name {
-  text-align: left;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  flex: 1 !important;
+  text-align: left !important;
+  padding-left: 10px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  font-size: 0.7rem !important; /* Match How to Play text size */
+  letter-spacing: 0 !important; /* Match How to Play letter spacing */
 }
 
+/* Player rating */
 .rating {
-  text-align: right;
-  color: rgb(116,113,203);
+  flex: 0 0 70px !important;
+  text-align: right !important;
+  color: rgb(255, 215, 0) !important;
+  font-weight: normal !important; /* Match How to Play font weight */
+  font-size: 0.7rem !important; /* Match How to Play text size */
+}
+
+/* W/L stats */
+.stats {
+  flex: 0 0 80px !important;
+  text-align: right !important;
+  color: #bbb !important;
+  font-size: 0.7rem !important; /* Match How to Play text size */
+  white-space: nowrap !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+
+/* Make sure the separator doesn't create a visual background */
+.ranking-item:not(:last-child) {
+  border-bottom: 1px solid rgba(116, 113, 203, 0.05) !important; /* Even more subtle separator */
+}
+
+/* Message when no players are ranked */
+.no-rankings {
+  padding: 20px;
+  text-align: center;
+  color: #888;
+  font-style: normal !important; /* Remove italic to match How to Play */
+  font-size: 0.7rem !important; /* Match How to Play text size */
+  border: none !important;
+  background-color: transparent !important;
+}
+
+:root, body, #root, .App {
+  min-height: 100vh;
+  height: auto;
+  overflow-y: auto;
+  background-color: #000;
+}
+
+html, body {
+  overflow: visible;
+  padding: 0;
+  margin: 0;
+  background-color: #000;
+}
+
+@media (max-width: 768px) {
+  .welcome {
+    padding: 1rem 0.5rem;
+  }
+  
+  .menu {
+    gap: 1.5rem;
+  }
+  
+  .rankings {
+    max-height: 300px;
+  }
+}
+
+@media (max-width: 500px) {
+  .ranking-item {
+    padding: 10px !important;
+    height: 40px !important;
+  }
+  
+  .rank {
+    flex: 0 0 25px !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .name {
+    font-size: 0.8rem !important;
+  }
+  
+  .rating {
+    flex: 0 0 60px !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .stats {
+    flex: 0 0 70px !important;
+    font-size: 0.7rem !important;
+  }
+}
+
+/* Apply border to the welcome container with higher specificity */
+body .welcome,
+#root .welcome,
+.App .welcome {
+  border: 2px solid rgb(116, 113, 203);
+  box-sizing: border-box;
+}
+
+/* Add !important to override any conflicting styles */
+.welcome {
+  background-color: #000 !important;
+  border: 2px solid rgb(116, 113, 203) !important;
 } 

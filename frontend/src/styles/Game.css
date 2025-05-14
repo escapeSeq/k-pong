@@ -119,4 +119,251 @@ body.playing {
   position: fixed;
   width: 100%;
   height: 100%;
+}
+
+/* Endgame screen styling to match welcome page */
+.endgame-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: rgba(0, 0, 0, 0.85);
+  z-index: 100;
+  padding: 2rem;
+  box-sizing: border-box;
+}
+
+/* Main message styling to match How to Play and Top Players headings */
+.endgame-message {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 1.2rem !important; /* Match the heading size */
+  color: rgb(116, 113, 203) !important; /* Match the purple color */
+  text-align: center;
+  margin-bottom: 2rem;
+  text-transform: uppercase;
+  letter-spacing: 1px !important;
+  text-shadow: none !important; /* Remove text shadow to match headings */
+  font-weight: normal !important;
+}
+
+/* Win message specific styling - keep the message format but update colors */
+.win-message {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 1.2rem !important;
+  color: rgb(116, 113, 203) !important; /* Use the same purple color */
+  text-transform: uppercase;
+  letter-spacing: 1px !important;
+  text-shadow: none !important;
+}
+
+/* Lose message specific styling - keep the message format but update colors */
+.lose-message {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 1.2rem !important;
+  color: rgb(116, 113, 203) !important; /* Use the same purple color */
+  text-transform: uppercase;
+  letter-spacing: 1px !important;
+  text-shadow: none !important;
+}
+
+/* Make sure any additional heading elements match */
+.endgame-container h1,
+.endgame-container h2,
+.endgame-container h3 {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 1.2rem !important;
+  color: rgb(116, 113, 203) !important;
+  text-transform: uppercase;
+  letter-spacing: 1px !important;
+  text-shadow: none !important;
+  font-weight: normal !important;
+}
+
+/* Stats section */
+.endgame-stats {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.8rem !important;
+  color: white;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  text-align: center;
+}
+
+/* Individual stat items */
+.stat-item {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.7rem !important;
+  line-height: 1.5;
+}
+
+/* Button styling to match welcome page */
+.endgame-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 300px;
+}
+
+.endgame-button {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.8rem !important;
+  padding: 1rem !important;
+  background: rgba(116, 113, 203, 0.5) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 0 !important; /* Remove rounded corners to match welcome page */
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.endgame-button:hover {
+  background: rgba(116, 113, 203, 0.8) !important;
+  transform: scale(1.05);
+  box-shadow: 0 0 15px rgba(116, 113, 203, 0.3);
+}
+
+/* Final score display */
+.final-score {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 1.2rem !important;
+  color: rgb(255, 215, 0) !important;
+  margin: 1rem 0;
+}
+
+/* Player name display */
+.player-name {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.9rem !important;
+}
+
+/* Any additional text on endgame screens */
+.endgame-container p, 
+.endgame-container h3, 
+.endgame-container span {
+  font-family: 'Press Start 2P', monospace !important;
+  font-size: 0.7rem !important;
+  line-height: 1.6;
+}
+
+/* Target all possible containers and elements within the endgame screen */
+.endgame-container,
+.endgame-container * {
+  text-align: center !important;
+}
+
+/* Super specific targeting for any result elements */
+.endgame-container .result,
+.endgame-container .stats,
+.endgame-container .stat-item,
+.endgame-container .final-score,
+.endgame-container .player-result,
+.endgame-container .game-stats,
+.endgame-container .game-result,
+.endgame-container p,
+.endgame-container span,
+.endgame-container div {
+  display: block !important;
+  width: 100% !important;
+  text-align: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+}
+
+/* Target specific endgame stats container */
+.endgame-stats {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  max-width: 400px !important; /* Limit width for better readability */
+  margin: 0 auto 2rem auto !important;
+}
+
+/* Ensure each stat item is centered */
+.stat-item {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  text-align: center !important;
+}
+
+/* Force any table elements to center */
+.endgame-container table,
+.endgame-container tr,
+.endgame-container td {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+}
+
+/* If there are any flex containers with items, ensure they're centered */
+.endgame-container [class*="flex"],
+.endgame-container [style*="display: flex"] {
+  justify-content: center !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+
+/* Ultimate centering solution with maximum specificity */
+body .endgame-container,
+#root .endgame-container,
+.App .endgame-container {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center !important;
+}
+
+/* Target every single direct child of endgame container */
+body .endgame-container > *,
+#root .endgame-container > *,
+.App .endgame-container > * {
+  width: 100% !important;
+  max-width: 500px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+  display: block !important;
+}
+
+/* Override any specific alignment issues */
+.endgame-stats,
+.stat-item,
+.endgame-message,
+.win-message,
+.lose-message,
+.final-score {
+  display: block !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  text-align: center !important;
+  width: 100% !important;
+  max-width: 500px !important;
+}
+
+/* Eliminate any justification or text-align that could be overriding */
+[style*="text-align"],
+[style*="justify-content"],
+[style*="align-items"],
+[style*="margin-left"],
+[style*="margin-right"] {
+  text-align: center !important;
+  justify-content: center !important;
+  align-items: center !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
 } 

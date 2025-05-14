@@ -3,6 +3,7 @@ const { createServer } = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
 const GameHandlers = require('./gameHandlers');
+const fetch = require('node-fetch');
 
 const app = express();
 
@@ -15,11 +16,12 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('Unhandled Rejection at:', promise, 'reason:', reason);
 });
 
-// More permissive CORS for Docker environment
+// Update your CORS middleware configuration
 app.use(cors({
-  origin: process.env.FRONTEND_URL,
+  origin: ['http://localhost:3000', 'http://frontend:3000'], // Allow both local development and Docker container access
   credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 const httpServer = createServer(app);
@@ -57,6 +59,38 @@ app.get('/health', (req, res) => {
 // Rankings endpoint
 app.get('/rankings', (req, res) => {
   res.json(gameHandlers.getTopPlayers());
+});
+
+// Add proxying endpoints for player service
+app.get('/api/rankings/top', async (req, res) => {
+  try {
+    const limit = req.query.limit || 10;
+    const playerServiceUrl = process.env.PLAYER_SERVICE_URL || 'http://player-service:5001';
+    
+    console.log(`Proxying request to player service: ${playerServiceUrl}/players/top?limit=${limit}`);
+    
+    const response = await fetch(`${playerServiceUrl}/players/top?limit=${limit}`);
+    const data = await response.json();
+    
+    console.log('Rankings data received:', data);
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching rankings from player service:', error);
+    res.status(500).json({ error: 'Failed to fetch rankings' });
+  }
+});
+
+// Add other proxy endpoints as needed
+app.get('/api/players/:name', async (req, res) => {
+  try {
+    const playerServiceUrl = process.env.PLAYER_SERVICE_URL || 'http://player-service:5001';
+    const response = await fetch(`${playerServiceUrl}/players/${req.params.name}`);
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error('Error fetching player from player service:', error);
+    res.status(500).json({ error: 'Failed to fetch player' });
+  }
 });
 
 try {

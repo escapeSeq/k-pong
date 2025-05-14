@@ -16,12 +16,27 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
     const fetchRankings = async () => {
       try {
         console.log('Fetching rankings...');
-        const response = await fetch(`${BACKEND_URL}/rankings`);
+        
+        // Use the backend as a proxy
+        const response = await fetch(`${BACKEND_URL}/api/rankings/top?limit=10`, {
+          method: 'GET',
+          credentials: 'include', // Include cookies for CORS requests
+          headers: {
+            'Content-Type': 'application/json',
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        
         const data = await response.json();
         console.log('Received rankings:', data);
         setRankings(data);
       } catch (error) {
         console.error('Failed to fetch rankings:', error);
+        // Use empty array instead of showing an error to the user
+        setRankings([]);
       }
     };
 
@@ -125,13 +140,18 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
         <div className="rankings">
           <h2>Top Players</h2>
           <div className="rankings-list">
-            {rankings.map((player, index) => (
-              <div key={player.name} className="ranking-item">
-                <span className="rank">{index + 1}</span>
-                <span className="name">{player.name}</span>
-                <span className="rating">{player.rating}</span>
-              </div>
-            ))}
+            {rankings.length > 0 ? (
+              rankings.map((player, index) => (
+                <div key={player.name} className="ranking-item">
+                  <span className="rank">{index + 1}</span>
+                  <span className="name">{player.name}</span>
+                  <span className="rating">{player.rating}</span>
+                  <span className="stats">{player.wins || 0}W/{player.losses || 0}L</span>
+                </div>
+              ))
+            ) : (
+              <div className="no-rankings">No players ranked yet</div>
+            )}
           </div>
         </div>
       </div>

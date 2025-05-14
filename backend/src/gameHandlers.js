@@ -1,4 +1,5 @@
 const { calculateElo } = require('./utils/eloCalculator');
+const fetch = require('node-fetch');
 
 class GameHandlers {
   constructor(io) {
@@ -6,6 +7,7 @@ class GameHandlers {
     this.games = new Map();
     this.waitingPlayers = new Set();
     this.playerRankings = new Map();
+    this.playerServiceUrl = process.env.PLAYER_SERVICE_URL || 'http://localhost:5001';
   }
 
   handleConnection(socket) {
@@ -17,6 +19,13 @@ class GameHandlers {
       query: socket.handshake.query, // Log full query
       rankings: Array.from(this.playerRankings.entries()) // Log current rankings
     });
+
+    // Fetch player data from player service
+    if (username) {
+      this.getPlayerRating(username).then(rating => {
+        console.log(`Player ${username} connected with rating ${rating}`);
+      });
+    }
 
     // Initialize player ranking if they're new
     if (username && !this.playerRankings.has(username)) {
@@ -31,9 +40,10 @@ class GameHandlers {
       console.log('Updated rankings:', Array.from(this.playerRankings.entries()));
       
       // Emit updated rankings
-      const topPlayers = this.getTopPlayers();
-      console.log('Emitting rankings update:', topPlayers);
-      this.io.emit('rankingsUpdate', topPlayers);
+      this.getTopPlayers().then(topPlayers => {
+        console.log('Emitting rankings update:', topPlayers);
+        socket.emit('rankingsUpdate', topPlayers);
+      });
     }
 
     // Clean up any existing connections for this username
@@ -102,7 +112,9 @@ class GameHandlers {
     }
 
     // Emit current rankings to all clients
-    this.io.emit('rankingsUpdate', this.getTopPlayers());
+    this.getTopPlayers().then(topPlayers => {
+      this.io.emit('rankingsUpdate', topPlayers);
+    });
 
     // Then, check for waiting players
     if (this.waitingPlayers.size > 0) {
@@ -385,74 +397,78 @@ class GameHandlers {
       return;
     }
     
-    // Get current ratings from the playerRankings map using player names
-    const currentWinnerRating = this.playerRankings.get(winner.name)?.rating || 1000;
-    const currentLoserRating = this.playerRankings.get(loser.name)?.rating || 1000;
-    
-    console.log('Ratings before update:', {
-      winner: winner.name,
-      currentWinnerRating,
-      loser: loser.name,
-      currentLoserRating
-    });
-    
-    // Try to get new ratings but with error handling
-    let newWinnerRating, newLoserRating;
-    try {
-      newWinnerRating = calculateElo(currentWinnerRating, currentLoserRating, 'win');
-      newLoserRating = calculateElo(currentLoserRating, currentWinnerRating, 'loss');
-    } catch (error) {
-      console.error('Error calculating ELO:', error);
-      newWinnerRating = currentWinnerRating;
-      newLoserRating = currentLoserRating;
-    }
-    
-    console.log('Calculated new ratings:', {
-      winner: winner.name,
-      newWinnerRating,
-      loser: loser.name,
-      newLoserRating
-    });
+    // Get current ratings from player service
+    this.getPlayerRating(winner.name).then(currentWinnerRating => {
+      this.getPlayerRating(loser.name).then(currentLoserRating => {
+        console.log('Ratings before update:', {
+          winner: winner.name,
+          currentWinnerRating,
+          loser: loser.name,
+          currentLoserRating
+        });
+        
+        // Try to get new ratings but with error handling
+        let newWinnerRating, newLoserRating;
+        try {
+          newWinnerRating = calculateElo(currentWinnerRating, currentLoserRating, 'win');
+          newLoserRating = calculateElo(currentLoserRating, currentWinnerRating, 'loss');
+        } catch (error) {
+          console.error('Error calculating ELO:', error);
+          newWinnerRating = currentWinnerRating;
+          newLoserRating = currentLoserRating;
+        }
+        
+        console.log('Calculated new ratings:', {
+          winner: winner.name,
+          newWinnerRating,
+          loser: loser.name,
+          newLoserRating
+        });
 
-    // Ensure winner always gains at least 5 points
-    const finalWinnerRating = Math.max(newWinnerRating, currentWinnerRating + 5);
-    
-    console.log('Final ratings after adjustment:', {
-      winner: winner.name,
-      finalWinnerRating,
-      loser: loser.name,
-      newLoserRating
-    });
-    
-    // Update rankings
-    this.updatePlayerRanking(winner.name, finalWinnerRating);
-    this.updatePlayerRanking(loser.name, newLoserRating);
+        // Ensure winner always gains at least 5 points
+        const finalWinnerRating = Math.max(newWinnerRating, currentWinnerRating + 5);
+        
+        console.log('Final ratings after adjustment:', {
+          winner: winner.name,
+          finalWinnerRating,
+          loser: loser.name,
+          newLoserRating
+        });
+        
+        // Update ratings in the player service
+        this.updatePlayerRating(winner.name, finalWinnerRating, 'win');
+        this.updatePlayerRating(loser.name, newLoserRating, 'loss');
 
-    try {
-      // Emit updated rankings to all clients
-      this.io.emit('rankingsUpdate', this.getTopPlayers());
+        try {
+          // Get updated top players
+          this.getTopPlayers().then(topPlayers => {
+            // Emit updated rankings to all clients
+            this.io.emit('rankingsUpdate', topPlayers);
 
-      // Send game over event with all relevant data
-      this.io.to(gameId).emit('gameOver', {
-        winner: winner.socketId,
-        ratings: {
-          [winner.socketId]: finalWinnerRating,
-          [loser.socketId]: newLoserRating
-        },
-        stats: {
-          duration: Date.now() - game.startTime,
-          maxSpeed: Math.max(Math.abs(game.ballVelocity.x || 0), Math.abs(game.ballVelocity.y || 0)),
-          hits: game.hits || 0,
-          score: game.score || [0, 0]
-        },
-        finalScore: game.score || [0, 0]
+            // Send game over event with all relevant data
+            this.io.to(gameId).emit('gameOver', {
+              winner: winner.socketId,
+              ratings: {
+                [winner.socketId]: finalWinnerRating,
+                [loser.socketId]: newLoserRating
+              },
+              stats: {
+                duration: Date.now() - game.startTime,
+                maxSpeed: Math.max(Math.abs(game.ballVelocity.x || 0), Math.abs(game.ballVelocity.y || 0)),
+                hits: game.hits || 0,
+                score: game.score || [0, 0]
+              },
+              finalScore: game.score || [0, 0]
+            });
+          });
+        } catch (error) {
+          console.error('Error emitting game end events:', error);
+        }
+
+        // Clean up game
+        this.games.delete(gameId);
       });
-    } catch (error) {
-      console.error('Error emitting game end events:', error);
-    }
-
-    // Clean up game
-    this.games.delete(gameId);
+    });
   }
 
   updatePlayerRanking(playerName, newRating) {
@@ -470,6 +486,66 @@ class GameHandlers {
     return Array.from(this.playerRankings.values())
       .sort((a, b) => b.rating - a.rating)
       .slice(0, limit);
+  }
+
+  // Get player ratings from the player service
+  async getPlayerRating(playerName) {
+    try {
+      const response = await fetch(`${this.playerServiceUrl}/players/${encodeURIComponent(playerName)}`);
+      
+      if (response.status === 404) {
+        // If player doesn't exist, create with default rating
+        const createResponse = await fetch(`${this.playerServiceUrl}/players`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: playerName })
+        });
+        
+        const data = await createResponse.json();
+        return data.rating || 1000;
+      } else if (response.ok) {
+        const data = await response.json();
+        return data.rating;
+      }
+      
+      return 1000; // Default rating if something goes wrong
+    } catch (error) {
+      console.error('Error fetching player rating:', error);
+      return 1000; // Default rating on error
+    }
+  }
+
+  // Update player rating in the player service
+  async updatePlayerRating(playerName, newRating, gameResult) {
+    try {
+      const response = await fetch(`${this.playerServiceUrl}/players/${encodeURIComponent(playerName)}/rating`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ newRating, gameResult })
+      });
+      
+      if (!response.ok) {
+        console.error('Failed to update player rating:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error updating player rating:', error);
+    }
+  }
+
+  // Get top players from the player service
+  async getTopPlayers(limit = 10) {
+    try {
+      const response = await fetch(`${this.playerServiceUrl}/players/top?limit=${limit}`);
+      
+      if (response.ok) {
+        return await response.json();
+      }
+      
+      return [];
+    } catch (error) {
+      console.error('Error fetching top players:', error);
+      return [];
+    }
   }
 }
 
