@@ -23,7 +23,7 @@ class GameHandlers {
       console.log('Initializing ranking for new player:', username);
       this.playerRankings.set(username, {
         name: username,
-        rating: 800,
+        rating: 1000,
         lastUpdated: Date.now()
       });
       
@@ -96,7 +96,7 @@ class GameHandlers {
     if (!this.playerRankings.has(player.name)) {
       this.playerRankings.set(player.name, {
         name: player.name,
-        rating: 800, // Initial rating
+        rating: 1000, // Initial rating
         lastUpdated: Date.now()
       });
     }
@@ -370,12 +370,41 @@ class GameHandlers {
     if (!game) return;
 
     const loser = game.players.find(p => p.socketId !== winner.socketId);
-    const newWinnerRating = calculateElo(winner.rating, loser.rating, 'win');
-    const newLoserRating = calculateElo(loser.rating, winner.rating, 'loss');
+    
+    // Get current ratings from the playerRankings map using player names
+    const currentWinnerRating = this.playerRankings.get(winner.name)?.rating || 1000;
+    const currentLoserRating = this.playerRankings.get(loser.name)?.rating || 1000;
+    
+    console.log('Ratings before update:', {
+      winner: winner.name,
+      currentWinnerRating,
+      loser: loser.name,
+      currentLoserRating
+    });
+    
+    const newWinnerRating = calculateElo(currentWinnerRating, currentLoserRating, 'win');
+    const newLoserRating = calculateElo(currentLoserRating, currentWinnerRating, 'loss');
+    
+    console.log('Calculated new ratings:', {
+      winner: winner.name,
+      newWinnerRating,
+      loser: loser.name,
+      newLoserRating
+    });
 
+    // Ensure winner always gains at least 5 points
+    const finalWinnerRating = Math.max(newWinnerRating, currentWinnerRating + 5);
+    
+    console.log('Final ratings after adjustment:', {
+      winner: winner.name,
+      finalWinnerRating,
+      loser: loser.name,
+      newLoserRating
+    });
+    
     // Update rankings
-    this.updatePlayerRanking(winner, newWinnerRating);
-    this.updatePlayerRanking(loser, newLoserRating);
+    this.updatePlayerRanking(winner.name, finalWinnerRating);
+    this.updatePlayerRanking(loser.name, newLoserRating);
 
     // Emit updated rankings to all clients
     this.io.emit('rankingsUpdate', this.getTopPlayers());
@@ -384,16 +413,15 @@ class GameHandlers {
     this.io.to(gameId).emit('gameOver', {
       winner: winner.socketId,
       ratings: {
-        [winner.socketId]: newWinnerRating,
+        [winner.socketId]: finalWinnerRating,
         [loser.socketId]: newLoserRating
       },
       stats: {
         duration: Date.now() - game.startTime,
         maxSpeed: Math.max(Math.abs(game.ballVelocity.x), Math.abs(game.ballVelocity.y)),
         hits: game.hits || 0,
-        score: game.score // Add the final score
+        score: game.score
       },
-      // Include final score at top level for easier access
       finalScore: game.score
     });
 
@@ -401,12 +429,15 @@ class GameHandlers {
     this.games.delete(gameId);
   }
 
-  updatePlayerRanking(player, newRating) {
-    this.playerRankings.set(player.name, {
-      name: player.name,
+  updatePlayerRanking(playerName, newRating) {
+    // Update method to accept playerName instead of player object
+    this.playerRankings.set(playerName, {
+      name: playerName,
       rating: newRating,
       lastUpdated: Date.now()
     });
+    
+    console.log(`Updated ranking for ${playerName}: ${newRating}`);
   }
 
   getTopPlayers(limit = 10) {
