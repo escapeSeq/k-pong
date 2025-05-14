@@ -194,7 +194,7 @@ class GameHandlers {
       ],
       score: [0, 0],
       ballPos: { x: 0, y: 0 },
-      ballVelocity: { x: 2, y: 0 },
+      ballVelocity: { x: 2.2, y: 0 },
       paddles: {
         player1: { y: 0 },
         player2: { y: 0 }
@@ -227,7 +227,13 @@ class GameHandlers {
       const playerIndex = game.players.findIndex(p => p.socketId === socket.id);
       if (playerIndex !== -1) {
         const paddleKey = `player${playerIndex + 1}`;
-        game.paddles[paddleKey].y = position;
+        // Apply damping for slower paddle movement (interpolate towards target position)
+        const currentPos = game.paddles[paddleKey].y;
+        const damping = 0.8; // Lower = slower movement (value between 0 and 1)
+        
+        // Interpolate towards the target position
+        game.paddles[paddleKey].y = currentPos + (position - currentPos) * damping;
+        
         this.io.to(gameId).emit('gameUpdate', game);
         break;
       }
@@ -277,9 +283,9 @@ class GameHandlers {
     const game = this.games.get(gameId);
     if (!game) return;
 
-    // Update ball position with slower speed
-    game.ballPos.x += game.ballVelocity.x * 0.005; // Reduced from 0.01
-    game.ballPos.y += game.ballVelocity.y * 0.005;
+    // Update ball position with 10% faster speed
+    game.ballPos.x += game.ballVelocity.x * 0.0055; // Increased by 10% from 0.005
+    game.ballPos.y += game.ballVelocity.y * 0.0055; // Increased by 10% from 0.005
 
     // Check for wall collisions
     if (Math.abs(game.ballPos.y) > 0.95) { // Allow for ball size
@@ -315,14 +321,19 @@ class GameHandlers {
       const paddle = game.paddles[playerId];
       const isLeftPaddle = i === 0;
       const paddleX = isLeftPaddle ? -0.95 : 0.95;
+      
+      // Increased paddle hitbox size
+      const paddleHitboxSize = 0.18; // Increased from 0.15 to cover full paddle + a bit extra
+      const paddleY = paddle.y;
 
-      // Check if ball is at paddle's x position
-      if ((isLeftPaddle && game.ballPos.x < paddleX && game.ballVelocity.x < 0) ||
-          (!isLeftPaddle && game.ballPos.x > paddleX && game.ballVelocity.x > 0)) {
-        
-        // Check if ball is within paddle's y range
-        const paddleHitboxSize = 0.15; // Paddle height / 2
-        if (Math.abs(game.ballPos.y - paddle.y) < paddleHitboxSize) {
+      // Check if ball is at paddle's x position with a slightly wider detection area
+      const ballNearPaddleX = isLeftPaddle ? 
+        (game.ballPos.x <= paddleX + 0.02 && game.ballVelocity.x < 0) : 
+        (game.ballPos.x >= paddleX - 0.02 && game.ballVelocity.x > 0);
+
+      if (ballNearPaddleX) {
+        // More generous y-range check with a slightly larger hitbox
+        if (Math.abs(game.ballPos.y - paddleY) <= paddleHitboxSize) {
           // Hit successful - reverse x direction
           game.ballVelocity.x *= -1.05;
 
@@ -330,7 +341,7 @@ class GameHandlers {
           game.hits = (game.hits || 0) + 1;
 
           // Calculate new y velocity based on hit position
-          const hitPosition = (game.ballPos.y - paddle.y) / paddleHitboxSize;
+          const hitPosition = (game.ballPos.y - paddleY) / paddleHitboxSize;
           game.ballVelocity.y = hitPosition * 2;
 
           // Limit angle to 30 degrees
@@ -338,7 +349,7 @@ class GameHandlers {
           game.ballVelocity.y = Math.max(Math.min(game.ballVelocity.y, maxYVelocity), -maxYVelocity);
 
           // Move ball slightly away from paddle to prevent multiple collisions
-          game.ballPos.x = paddleX + (isLeftPaddle ? 0.02 : -0.02);
+          game.ballPos.x = paddleX + (isLeftPaddle ? 0.03 : -0.03);
         }
       }
     }
@@ -346,7 +357,7 @@ class GameHandlers {
 
   resetBall(game) {
     game.ballPos = { x: 0, y: 0 };
-    const speed = 2; // Reduced from 5
+    const speed = 2.2; // Increased by 10% from 2
     const angle = (Math.random() - 0.5) * Math.PI / 3; // Max 30 degrees
     game.ballVelocity = {
       x: speed * Math.cos(angle) * (Math.random() < 0.5 ? 1 : -1),
