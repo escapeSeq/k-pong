@@ -4,3 +4,6 @@ FROM mongo:7
 VOLUME /data/db
 
 CMD ["mongod", "--bind_ip_all"]
+
+# Add healthcheck to verify MongoDB is running
+HEALTHCHECK --interval=5s --timeout=3s --retries=3 CMD mongosh --quiet --eval "db.runCommand({ ping: 1 })"
