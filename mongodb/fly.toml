@@ -1,15 +1,10 @@
-# fly.toml app configuration file generated for k-pong-mongodb on 2025-05-14T22:41:40Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
 app = 'k-pong-mongodb'
 primary_region = 'arn'
 
 [build]
 
 [mounts]
-  source = 'mongodb_data'
+  source = 'mongodb_data'  # Changed back to 'mongodb_data' to match existing volume
   destination = '/data/db'
 
 [env]
