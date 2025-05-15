@@ -15,24 +15,39 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI, {
-  serverSelectionTimeoutMS: 5000,
+// Update the connection options with more debugging and retry logic
+const mongoOptions = {
+  serverSelectionTimeoutMS: 30000, // Longer timeout for server selection
   socketTimeoutMS: 45000,
-  connectTimeoutMS: 10000,
-  bufferCommands: false,
-}).then(() => {
-  console.log('Connected to MongoDB');
-}).catch(err => {
-  console.error('MongoDB connection error:', err);
-});
+  connectTimeoutMS: 30000,
+  heartbeatFrequencyMS: 5000, // More frequent heartbeats
+  retryWrites: true,
+  w: 'majority',
+  authSource: 'admin', // Specify auth source explicitly
+  directConnection: true, // Try direct connection 
+};
 
-// Add a better error handler for the connection
+console.log(`Attempting to connect to MongoDB at: ${process.env.MONGODB_URI}`);
+
+mongoose.connect(process.env.MONGODB_URI, mongoOptions)
+  .then(() => {
+    console.log('Connected to MongoDB successfully');
+  }).catch(err => {
+    console.error('MongoDB connection error details:', {
+      name: err.name,
+      message: err.message,
+      stack: err.stack
+    });
+  });
+
+// Add additional connection event handlers
 const db = mongoose.connection;
-db.on('error', console.error.bind(console, 'MongoDB connection error:'));
-db.once('open', function() {
-  console.log('MongoDB connected successfully');
-});
+db.on('connecting', () => console.log('Connecting to MongoDB...'));
+db.on('connected', () => console.log('MongoDB connected event fired'));
+db.on('disconnecting', () => console.log('Disconnecting from MongoDB...'));
+db.on('disconnected', () => console.log('MongoDB disconnected'));
+db.on('error', err => console.error('MongoDB connection error event:', err));
+db.on('reconnected', () => console.log('MongoDB reconnected'));
 
 // Define Player schema
 const playerSchema = new mongoose.Schema({
