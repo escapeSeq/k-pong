@@ -1,15 +1,15 @@
-# fly.toml app configuration file generated for k-pong-player-serivce on 2025-05-14T22:45:07Z
+# fly.toml app configuration file generated for k-pong-player-service on 2025-05-14T22:45:07Z
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'k-pong-player-serivce'
+app = 'k-pong-player-service'
 primary_region = 'arn'
 
 [env]
   PORT = "5001"
   MONGODB_URI = "mongodb://k-pong-mongodb.internal:27017/kpong-players"
-  CORS_ORIGIN = ["https://k-pong.fly.dev", "https://k-pong-backend.fly.dev"]
+  CORS_ORIGIN = ["k-pong.fly.dev", "k-pong-backend.fly.dev"]
 [build]
 
 [http_service]
