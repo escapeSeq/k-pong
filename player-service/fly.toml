@@ -8,9 +8,8 @@ primary_region = 'arn'
 
 [env]
   PORT = "5001"
-  MONGODB_URI = "mongodb://k-pong-mongodb:27017/kpong-players"
-  FRONTEND_URL = "https://k-pong.fly.dev"
-
+  MONGODB_URI = "mongodb://k-pong-mongodb.internal:27017/kpong-players"
+  CORS_ORIGIN = ["https://k-pong.fly.dev", "https://k-pong-backend.fly.dev"]
 [build]
 
 [http_service]
