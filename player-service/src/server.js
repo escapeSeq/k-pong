@@ -1,12 +1,12 @@
 const express = require('express');
 const cors = require('cors');
-const mongoose = require('mongoose');
 const app = express();
 const PORT = process.env.PORT || 5001;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/kpong-players';
+
+// In-memory storage
+const players = new Map();
 
 // Middleware
-console.log("--------------------",process.env.FRONTEND_URL, process.env.BACKEND_URL);
 app.use(cors({
   origin: [process.env.FRONTEND_URL, process.env.BACKEND_URL],
   credentials: true,
@@ -15,83 +15,17 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Update the connection options with more debugging and retry logic
-const mongoOptions = {
-  serverSelectionTimeoutMS: 30000, // Longer timeout for server selection
-  socketTimeoutMS: 45000,
-  connectTimeoutMS: 30000,
-  heartbeatFrequencyMS: 5000, // More frequent heartbeats
-  retryWrites: true,
-  w: 'majority',
-  authSource: 'admin', // Specify auth source explicitly
-  directConnection: true, // Try direct connection 
-};
-
-console.log(`Attempting to connect to MongoDB at: ${process.env.MONGODB_URI}`);
-
-mongoose.connect(process.env.MONGODB_URI, mongoOptions)
-  .then(() => {
-    console.log('Connected to MongoDB successfully');
-  }).catch(err => {
-    console.error('MongoDB connection error details:', {
-      name: err.name,
-      message: err.message,
-      stack: err.stack
-    });
-  });
-
-// Add additional connection event handlers
-const db = mongoose.connection;
-db.on('connecting', () => console.log('Connecting to MongoDB...'));
-db.on('connected', () => console.log('MongoDB connected event fired'));
-db.on('disconnecting', () => console.log('Disconnecting from MongoDB...'));
-db.on('disconnected', () => console.log('MongoDB disconnected'));
-db.on('error', err => console.error('MongoDB connection error event:', err));
-db.on('reconnected', () => console.log('MongoDB reconnected'));
-
-// Define Player schema
-const playerSchema = new mongoose.Schema({
-  name: { 
-    type: String, 
-    required: true, 
-    unique: true, 
-    trim: true 
-  },
-  rating: { 
-    type: Number, 
-    default: 1000 
-  },
-  gamesPlayed: { 
-    type: Number, 
-    default: 0 
-  },
-  wins: { 
-    type: Number, 
-    default: 0 
-  },
-  losses: { 
-    type: Number, 
-    default: 0 
-  },
-  lastActive: { 
-    type: Date, 
-    default: Date.now 
-  }
-});
-
-// Create Player model
-const Player = mongoose.model('Player', playerSchema);
-
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', service: 'player-ranking-service' });
 });
 
 // Get all players
-app.get('/players', async (req, res) => {
+app.get('/players', (req, res) => {
   try {
-    const players = await Player.find({}).sort({ rating: -1 });
-    res.status(200).json(players);
+    const playersList = Array.from(players.values())
+      .sort((a, b) => b.rating - a.rating);
+    res.status(200).json(playersList);
   } catch (error) {
     console.error('Error fetching players:', error);
     res.status(500).json({ error: 'Failed to fetch players' });
@@ -99,13 +33,13 @@ app.get('/players', async (req, res) => {
 });
 
 // Get top players
-app.get('/players/top', async (req, res) => {
+app.get('/players/top', (req, res) => {
   try {
     const limit = parseInt(req.query.limit) || 10;
-    const players = await Player.find({})
-      .sort({ rating: -1 })
-      .limit(limit);
-    res.status(200).json(players);
+    const playersList = Array.from(players.values())
+      .sort((a, b) => b.rating - a.rating)
+      .slice(0, limit);
+    res.status(200).json(playersList);
   } catch (error) {
     console.error('Error fetching top players:', error);
     res.status(500).json({ error: 'Failed to fetch top players' });
@@ -113,9 +47,9 @@ app.get('/players/top', async (req, res) => {
 });
 
 // Get player by name
-app.get('/players/:name', async (req, res) => {
+app.get('/players/:name', (req, res) => {
   try {
-    const player = await Player.findOne({ name: req.params.name });
+    const player = players.get(req.params.name);
     if (!player) {
       return res.status(404).json({ error: 'Player not found' });
     }
@@ -127,7 +61,7 @@ app.get('/players/:name', async (req, res) => {
 });
 
 // Create or update player
-app.post('/players', async (req, res) => {
+app.post('/players', (req, res) => {
   try {
     const { name, rating, gameResult } = req.body;
     
@@ -135,16 +69,18 @@ app.post('/players', async (req, res) => {
       return res.status(400).json({ error: 'Player name is required' });
     }
 
-    // Find player or create new one
-    let player = await Player.findOne({ name });
+    let player = players.get(name);
     
     if (!player) {
-      player = new Player({ 
+      player = {
         name,
-        rating: rating || 1000
-      });
+        rating: rating || 1000,
+        gamesPlayed: 0,
+        wins: 0,
+        losses: 0,
+        lastActive: new Date()
+      };
     } else {
-      // Update existing player
       if (rating !== undefined) {
         player.rating = rating;
       }
@@ -160,8 +96,8 @@ app.post('/players', async (req, res) => {
       }
     }
     
-    player.lastActive = Date.now();
-    await player.save();
+    player.lastActive = new Date();
+    players.set(name, player);
     
     res.status(200).json(player);
   } catch (error) {
@@ -171,7 +107,7 @@ app.post('/players', async (req, res) => {
 });
 
 // Update player rating after a game
-app.patch('/players/:name/rating', async (req, res) => {
+app.patch('/players/:name/rating', (req, res) => {
   try {
     const { name } = req.params;
     const { newRating, gameResult } = req.body;
@@ -180,14 +116,14 @@ app.patch('/players/:name/rating', async (req, res) => {
       return res.status(400).json({ error: 'New rating is required' });
     }
     
-    const player = await Player.findOne({ name });
+    const player = players.get(name);
     
     if (!player) {
       return res.status(404).json({ error: 'Player not found' });
     }
     
     player.rating = newRating;
-    player.lastActive = Date.now();
+    player.lastActive = new Date();
     
     // Update game stats if provided
     if (gameResult) {
@@ -199,7 +135,7 @@ app.patch('/players/:name/rating', async (req, res) => {
       }
     }
     
-    await player.save();
+    players.set(name, player);
     res.status(200).json(player);
   } catch (error) {
     console.error('Error updating player rating:', error);

@@ -19,10 +19,8 @@ services:
       - PORT=5000
       - FRONTEND_URL=http://localhost:3000
       - PLAYER_SERVICE_URL=http://player-service:5001
-      - MONGODB_URI=mongodb://mongo:27017/kpong
     depends_on:
       - player-service
-      - mongo
     networks:
       - app-network
 
@@ -32,25 +30,10 @@ services:
       - "5001:5001"
     environment:
       - PORT=5001
-      - MONGODB_URI=mongodb://mongo:27017/kpong-players
       - FRONTEND_URL=http://localhost:3000
       - BACKEND_URL=http://localhost:5000
-    depends_on:
-      - mongo
     networks:
       - app-network
-
-  mongo:
-    image: mongo:latest
-    ports:
-      - "27017:27017"
-    volumes:
-      - mongo-data:/data/db
-    networks:
-      - app-network
-
-volumes:
-  mongo-data:
 
 networks:
   app-network:
