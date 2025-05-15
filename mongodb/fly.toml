@@ -12,13 +12,19 @@ primary_region = 'arn'
   source = 'db'
   destination = '/data/db'
 
-[http_service]
+[[services]]
+  protocol = "tcp"
   internal_port = 27017
-  force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 1
-  processes = ['app']
+  processes = ["app"]
+  
+  [[services.ports]]
+    port = 27017
+    handlers = ["tcp"]
+  
+  [services.concurrency]
+    type = "connections"
+    hard_limit = 1000
+    soft_limit = 500
 
 [[vm]]
   memory = '1gb'
