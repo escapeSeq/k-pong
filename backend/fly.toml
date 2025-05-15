@@ -11,7 +11,6 @@ primary_region = "arn"
   NODE_ENV = "production"
   FRONTEND_URL = "https://k-pong.fly.dev"
   PLAYER_SERVICE_URL = "http://k-pong-player-service.internal:5001"
-  MONGODB_URI = "mongodb://k-pong-mongodb.internal:27017/kpong"
 
 [build]
   [build.args]

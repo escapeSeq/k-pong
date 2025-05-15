@@ -11,8 +11,6 @@ primary_region = 'arn'
   NODE_ENV = "production"
   FRONTEND_URL = "https://k-pong.fly.dev"
   BACKEND_URL = "http://k-pong-backend.internal"
-  MONGODB_URI = "mongodb://k-pong-mongodb.internal:27017/kpong"
-
 
 [build]
 
