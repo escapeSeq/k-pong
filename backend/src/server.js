@@ -18,7 +18,7 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Update your CORS middleware configuration
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://frontend:3000'], // Allow both local development and Docker container access
+  origin: process.env.FRONTEND_URL,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']

@@ -6,6 +6,7 @@ const PORT = process.env.PORT || 5001;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/kpong-players';
 
 // Middleware
+console.log("--------------------",process.env.FRONTEND_URL, process.env.BACKEND_URL);
 app.use(cors({
   origin: [process.env.FRONTEND_URL, process.env.BACKEND_URL],
   credentials: true,

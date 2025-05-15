@@ -17,6 +17,7 @@ services:
       - "5000:5000"
     environment:
       - PORT=5000
+      - FRONTEND_URL=http://localhost:3000
       - PLAYER_SERVICE_URL=http://player-service:5001
       - MONGODB_URI=mongodb://mongo:27017/kpong
     depends_on:
@@ -32,7 +33,8 @@ services:
     environment:
       - PORT=5001
       - MONGODB_URI=mongodb://mongo:27017/kpong-players
-      - CORS_ORIGIN=['http://localhost:3000', 'http://localhost:5000']
+      - FRONTEND_URL=http://localhost:3000
+      - BACKEND_URL=http://localhost:5000
     depends_on:
       - mongo
     networks:
