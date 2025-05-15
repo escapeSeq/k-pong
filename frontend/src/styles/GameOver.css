@@ -2,11 +2,24 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem;
-  gap: 2rem;
-  min-height: 100vh;
+  justify-content: center;
+  text-align: center;
+  height: 100vh;
+  padding: 20px;
   background-color: #000;
   color: #fff;
+}
+
+/* Enhanced retro game style for the heading */
+.game-over h1 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  margin-bottom: 1.5rem;
+  color: #fff;
+  text-shadow: 0 0 10px #7471cb, 0 0 20px #7471cb, 0 0 30px #7471cb;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
 }
 
 .stats, .rankings {
@@ -15,6 +28,17 @@
   border-radius: 8px;
   width: 100%;
   max-width: 600px;
+  text-align: center;
+}
+
+.stats {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.stats p {
+  margin: 10px 0;
+  text-align: center;
 }
 
 .ranking-item {
