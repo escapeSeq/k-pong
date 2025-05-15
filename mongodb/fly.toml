@@ -19,7 +19,7 @@ primary_region = 'arn'
   
   [[services.ports]]
     port = 27017
-    handlers = ["tcp"]
+    handlers = ["proxy_proto"]
   
   [services.concurrency]
     type = "connections"
