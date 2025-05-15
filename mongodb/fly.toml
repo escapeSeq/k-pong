@@ -12,13 +12,13 @@ primary_region = 'arn'
   source = 'db'
   destination = '/data/db'
 
-[http_service]
+# Use a simple TCP service without handlers
+[[services]]
   internal_port = 27017
-  force_https = true
-  auto_stop_machines = 'stop'
-  auto_start_machines = true
-  min_machines_running = 0
-  processes = ['app']
+  protocol = "tcp"
+
+  [[services.ports]]
+    port = 27017
 
 [[vm]]
   memory = '1gb'
