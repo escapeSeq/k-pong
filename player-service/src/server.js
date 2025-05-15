@@ -7,7 +7,7 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/kpong-
 
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN,
+  origin: [process.env.FRONTEND_URL, process.env.BACKEND_URL],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
