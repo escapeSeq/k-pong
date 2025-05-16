@@ -14,17 +14,72 @@ class SoundManager {
     this.defaultGenome = "aslkajd asklja lskj ask aslkj aldka lskdjaslkdj ";
     
     this.isGenomeAudioPlaying = false;
+    this.initialized = false;
+  }
+
+  init() {
+    if (this.initialized) return Promise.resolve();
     
-    try {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      console.log('Audio context created:', this.audioContext.state);
-    } catch (e) {
-      console.error('Failed to create audio context:', e);
+    return new Promise((resolve) => {
+      try {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        console.log('Audio context created:', this.audioContext.state);
+        
+        // Load and prepare audio files silently
+        const promises = [
+          this.hitSound.load(),
+          this.scoreSound.load(),
+          this.loadSound.load(),
+          this.gameOverSound.load(),
+          this.introSound.load()
+        ];
+        
+        Promise.all(promises)
+          .then(() => {
+            this.initialized = true;
+            console.log('Sound Manager initialized');
+            resolve();
+          })
+          .catch(err => {
+            console.warn('Sound initialization warning:', err);
+            this.initialized = true;
+            resolve();
+          });
+      } catch (e) {
+        console.error('Failed to initialize audio context:', e);
+        this.initialized = true;
+        resolve();
+      }
+    });
+  }
+
+  ensureAudioContext() {
+    if (!this.audioContext) {
+      try {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      } catch (e) {
+        console.error('Failed to create audio context:', e);
+      }
     }
+    
+    if (this.audioContext && this.audioContext.state === 'suspended') {
+      this.audioContext.resume().catch(e => {
+        console.error('Failed to resume audio context:', e);
+      });
+    }
+    
+    return this.audioContext;
   }
 
   async playWithErrorHandling(playFunction, fallbackMessage = '') {
     try {
+      if (!this.initialized) {
+        await this.init();
+      }
+      
+      // Ensure audio context is running
+      this.ensureAudioContext();
+      
       await playFunction();
     } catch (error) {
       console.warn(`Sound playback failed: ${fallbackMessage}`, error);
@@ -36,6 +91,10 @@ class SoundManager {
   }
 
   startGenomeAudio(genome = null) {
+    if (!this.initialized) {
+      console.log('Initializing sound manager before playing genome audio');
+      return this.init().then(() => this.createRhythmicSound(genome || this.defaultGenome));
+    }
     return this.createRhythmicSound(genome || this.defaultGenome);
   }
 
@@ -47,19 +106,8 @@ class SoundManager {
     try {
       this.stopAll();
       
-      if (!this.audioContext) {
-        try {
-          this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        } catch (e) {
-          console.error('Failed to create audio context:', e);
-          return;
-        }
-      }
-      
-      if (this.audioContext.state === 'suspended') {
-        this.audioContext.resume().catch(e => {
-          console.error('Failed to resume audio context:', e);
-        });
+      if (!this.ensureAudioContext()) {
+        return;
       }
       
       console.log('Creating faster rhythmic sound with genome:', genome);
@@ -157,7 +205,7 @@ class SoundManager {
       
       this.createBassDrone(baseFreq * 0.5);
       
-      this.createRhythmicPercussion(beatInterval, genome);
+      this.createRhythmicPercussion(beatInterval, genome, baseFreq);
       
       this.isGenomeAudioPlaying = true;
       console.log('Faster rhythmic genome audio started successfully');
@@ -260,7 +308,7 @@ class SoundManager {
     }
   }
 
-  createRhythmicPercussion(beatInterval, genome) {
+  createRhythmicPercussion(beatInterval, genome, baseFreq) {
     try {
       if (!this.audioContext) return;
       
@@ -370,35 +418,74 @@ class SoundManager {
     return this.playWithErrorHandling(
       () => {
         this.hitSound.currentTime = 0;
-        this.hitSound.play();
+        return this.hitSound.play()
+          .catch(err => {
+            console.warn('Hit sound playback error:', err);
+            if (err.name === 'NotAllowedError') {
+              // Needs user interaction - could show UI hint
+              console.info('Audio playback requires user interaction first');
+            }
+            throw err; // Re-throw to be caught by playWithErrorHandling
+          });
       },
       'Hit sound failed'
     );
   }
 
   playScoreSound() {
-    this.scoreSound.currentTime = 0;
-    this.scoreSound.play();
+    return this.playWithErrorHandling(
+      () => {
+        this.scoreSound.currentTime = 0;
+        return this.scoreSound.play()
+          .catch(err => {
+            console.warn('Score sound playback error:', err);
+            throw err;
+          });
+      },
+      'Score sound failed'
+    );
   }
 
   playLoadSound() {
     return this.playWithErrorHandling(
       () => {
         this.loadSound.currentTime = 0;
-        this.loadSound.play();
+        return this.loadSound.play()
+          .catch(err => {
+            console.warn('Load sound playback error:', err);
+            throw err;
+          });
       },
       'Load sound failed'
     );
   }
 
   playGameOverSound() {
-    this.gameOverSound.currentTime = 0;
-    this.gameOverSound.play();
+    return this.playWithErrorHandling(
+      () => {
+        this.gameOverSound.currentTime = 0;
+        return this.gameOverSound.play()
+          .catch(err => {
+            console.warn('Game over sound playback error:', err);
+            throw err;
+          });
+      },
+      'Game over sound failed'
+    );
   }
 
   playIntroSound() {
-    this.introSound.currentTime = 0;
-    return this.introSound.play();
+    return this.playWithErrorHandling(
+      () => {
+        this.introSound.currentTime = 0;
+        return this.introSound.play()
+          .catch(err => {
+            console.warn('Intro sound playback error:', err);
+            throw err;
+          });
+      },
+      'Intro sound failed'
+    );
   }
   
   hashCode(str) {
@@ -411,6 +498,37 @@ class SoundManager {
       hash = hash & hash;
     }
     return hash;
+  }
+
+  initializeOnUserInteraction() {
+    if (this.initialized) {
+      console.log('Sound Manager already initialized');
+      return Promise.resolve();
+    }
+    
+    console.log('Initializing Sound Manager on user interaction');
+    return this.init().then(() => {
+      // Unlock audio context first
+      if (this.audioContext && this.audioContext.state === 'suspended') {
+        this.audioContext.resume();
+      }
+      
+      // Better approach: Create and play a silent audio buffer to unlock audio
+      try {
+        const buffer = this.audioContext.createBuffer(1, 1, 22050);
+        const source = this.audioContext.createBufferSource();
+        source.buffer = buffer;
+        source.connect(this.audioContext.destination);
+        source.start(0);
+        
+        // Don't try to use play/pause for unlocking as it causes AbortError
+        console.log('Audio context unlocked with buffer source');
+        return Promise.resolve();
+      } catch (e) {
+        console.warn('Could not unlock audio context with buffer, falling back', e);
+        return Promise.resolve();
+      }
+    });
   }
 }
 
