@@ -368,16 +368,66 @@ body .endgame-container > *,
   margin-right: auto !important;
 }
 
-/* Welcome page styling */
-.welcome-container {
+/* Target the correct welcome class */
+.welcome {
+  display: block !important;
+  height: auto !important;
+  min-height: 100vh !important;
+  padding: 2rem !important;
+  margin: 0 !important;
+  position: static !important;
+  transform: none !important;
+  top: 0 !important;
+  left: 0 !important;
+  overflow-y: auto !important;
+  background-color: #000 !important;
+}
+
+/* Target the logo in the welcome page */
+.welcome .logo {
+  display: block !important;
+  position: static !important;
+  margin: 0 auto 2rem auto !important;
+  padding: 0 !important;
+  max-height: 100px !important;
+  width: auto !important;
+  transform: none !important;
+  top: auto !important;
+  left: auto !important;
+}
+
+/* Reset all margins and transforms for welcome page elements */
+.welcome *,
+.welcome > * {
+  margin-top: 0 !important;
+  transform: none !important;
+  position: static !important;
+}
+
+/* First child positioning - force it to the top */
+.welcome > *:first-child {
+  margin-top: 0 !important;
+}
+
+/* Content containers in welcome page */
+.welcome > div,
+.welcome > section {
+  margin-bottom: 2rem;
   width: 100%;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 5vh; /* Add space at the top */
-  justify-content: flex-start; /* Align content to the top instead of center */
-  overflow-y: auto; /* Allow scrolling if content overflows */
-  background-color: #000;
-  box-sizing: border-box;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Top player list adjustments */
+.welcome-container .top-players {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto 2rem;
+}
+
+/* Remove any flex or positioning that might interfere */
+.welcome-container div,
+.welcome-container section {
+  position: static;
 }
