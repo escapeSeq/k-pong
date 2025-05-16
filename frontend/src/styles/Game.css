@@ -366,4 +366,18 @@ body .endgame-container > *,
   align-items: center !important;
   margin-left: auto !important;
   margin-right: auto !important;
-} 
+}
+
+/* Welcome page styling */
+.welcome-container {
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 5vh; /* Add space at the top */
+  justify-content: flex-start; /* Align content to the top instead of center */
+  overflow-y: auto; /* Allow scrolling if content overflows */
+  background-color: #000;
+  box-sizing: border-box;
+}
