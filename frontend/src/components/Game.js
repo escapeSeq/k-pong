@@ -37,6 +37,12 @@ const Game = ({ gameState, onUsernameSet, username }) => {
   const containerRef = useRef(null);
 
   const [usernamePromptShown, setUsernamePromptShown] = useState(false);
+  // Add state for genome music
+  const [isGenomeMusicActive, setIsGenomeMusicActive] = useState(false);
+  const [genomeInput, setGenomeInput] = useState('');
+
+  // Add state to track if we've tried to start audio
+  const [audioStarted, setAudioStarted] = useState(false);
 
   const drawGame = useCallback((ctx) => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -279,7 +285,11 @@ const Game = ({ gameState, onUsernameSet, username }) => {
       setIsWaiting(false);
       setGameData(data);
       prevGameDataRef.current = data;
-      soundManager.startBackgroundMusic();
+      
+      // Start background music only if genome music is not active
+      if (!isGenomeMusicActive) {
+        soundManager.startBackgroundMusic();
+      }
     });
 
     newSocket.on('gameUpdate', (data) => {
@@ -367,7 +377,7 @@ const Game = ({ gameState, onUsernameSet, username }) => {
         cleanupSocket();
       }
     };
-  }, [cleanupSocket, isConnecting, navigate]);
+  }, [cleanupSocket, isConnecting, navigate, isGenomeMusicActive]);
 
   // Setup keyboard listeners
   useEffect(() => {
@@ -451,12 +461,16 @@ const Game = ({ gameState, onUsernameSet, username }) => {
     };
   }, [setupSocket, cleanupSocket, isConnecting, username]);
 
-  // Add sound initialization
+  // Add sound initialization with genome support
   useEffect(() => {
-    soundManager.playWithErrorHandling(
-      () => soundManager.startBackgroundMusic(),
-      'Background music failed to start'
-    );
+    // Only start default background music if genome music is not active
+    if (!isGenomeMusicActive) {
+      soundManager.playWithErrorHandling(
+        () => soundManager.startBackgroundMusic(),
+        'Background music failed to start'
+      );
+    }
+    
     return () => {
       try {
         soundManager.stopAll();
@@ -464,7 +478,7 @@ const Game = ({ gameState, onUsernameSet, username }) => {
         console.warn('Failed to stop sounds:', error);
       }
     };
-  }, []);
+  }, [isGenomeMusicActive]);
 
   // Add this inside your existing useEffect for game setup
   useEffect(() => {
@@ -479,6 +493,110 @@ const Game = ({ gameState, onUsernameSet, username }) => {
     };
   }, [isWaiting]);
 
+  // Function to handle genome music toggle
+  const handleGenomeMusicToggle = () => {
+    const genomeModal = document.createElement('dialog');
+    genomeModal.innerHTML = `
+      <form method="dialog">
+        <h2>Enter Music Genome</h2>
+        <p>Enter a string that will be used to generate music</p>
+        <input type="text" id="genome-input" placeholder="Enter genome string" required minlength="4" value="${genomeInput || ''}">
+        <div class="buttons">
+          <button type="submit">Generate Music</button>
+          <button type="button" id="cancel-btn">Cancel</button>
+        </div>
+      </form>
+    `;
+    
+    document.body.appendChild(genomeModal);
+    genomeModal.showModal();
+    
+    // Handle cancel button
+    document.getElementById('cancel-btn').onclick = () => {
+      genomeModal.close();
+      genomeModal.remove();
+    };
+    
+    genomeModal.querySelector('form').onsubmit = (e) => {
+      e.preventDefault();
+      const genome = document.getElementById('genome-input').value;
+      if (genome) {
+        console.log('Starting genome music with:', genome);
+        setGenomeInput(genome);
+        setIsGenomeMusicActive(true);
+        
+        // Use a try-catch block to handle any errors
+        try {
+          soundManager.stopAll();
+          
+          // Add a small delay before starting new audio
+          setTimeout(() => {
+            try {
+              soundManager.startGenomeAudio(genome);
+              console.log('Genome music started successfully');
+            } catch (error) {
+              console.error('Error starting genome music:', error);
+            }
+          }, 100);
+        } catch (error) {
+          console.error('Error in genome music toggle:', error);
+        }
+      }
+      genomeModal.remove();
+    };
+  };
+  
+  // Function to reset to default music
+  const resetToDefaultMusic = () => {
+    try {
+      console.log('Resetting to default music');
+      setIsGenomeMusicActive(false);
+      soundManager.stopAll();
+      
+      // Add a small delay before starting new audio
+      setTimeout(() => {
+        try {
+          soundManager.startBackgroundMusic();
+          console.log('Default music started successfully');
+        } catch (error) {
+          console.error('Error starting default music:', error);
+        }
+      }, 100);
+    } catch (error) {
+      console.error('Error in reset to default music:', error);
+    }
+  };
+
+  // Add a click handler to start audio after user interaction
+  const handleStartAudio = useCallback(() => {
+    if (!audioStarted) {
+      console.log('Starting audio from user interaction');
+      soundManager.stopAll();
+      soundManager.startSimpleGenomeAudio();
+      setAudioStarted(true);
+    }
+  }, [audioStarted]);
+
+  // Add effect to set up click listener
+  useEffect(() => {
+    if (!audioStarted) {
+      document.addEventListener('click', handleStartAudio, { once: true });
+      document.addEventListener('touchstart', handleStartAudio, { once: true });
+      
+      // Also try to start automatically
+      const timer = setTimeout(() => {
+        console.log('Attempting automatic audio start');
+        handleStartAudio();
+      }, 1000);
+      
+      return () => {
+        document.removeEventListener('click', handleStartAudio);
+        document.removeEventListener('touchstart', handleStartAudio);
+        clearTimeout(timer);
+      };
+    }
+  }, [audioStarted, handleStartAudio]);
+
   return (
     <div className="game-container" ref={containerRef} style={{ touchAction: 'none' }}>
       <div className="player-names">
@@ -490,6 +608,50 @@ const Game = ({ gameState, onUsernameSet, username }) => {
         <span>{gameData.score[1]}</span>
       </div>
       <canvas ref={canvasRef} />
+      
+      {/* Music controls with auto cursor */}
+      <div className="music-controls-container" style={{ cursor: 'auto' }}>
+        <div className="music-controls">
+          {isGenomeMusicActive ? (
+            <button onClick={resetToDefaultMusic} className="music-button">
+              Reset to Default Music
+            </button>
+          ) : (
+            <button onClick={handleGenomeMusicToggle} className="music-button">
+              Use Genome Music
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Add a visible button to start audio if not started */}
+      {!audioStarted && (
+        <div className="audio-start-container" style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          zIndex: 1000,
+          background: 'rgba(0,0,0,0.8)',
+          padding: '20px',
+          borderRadius: '10px',
+          border: '2px solid rgb(116,113,203)',
+          textAlign: 'center'
+        }}>
+          <button onClick={handleStartAudio} style={{
+            fontFamily: 'Press Start 2P, monospace',
+            fontSize: '1rem',
+            padding: '15px 30px',
+            background: 'rgb(116,113,203)',
+            color: '#000',
+            border: 'none',
+            borderRadius: '5px',
+            cursor: 'pointer'
+          }}>
+            Start Game Audio
+          </button>
+        </div>
+      )}
     </div>
   );
 };

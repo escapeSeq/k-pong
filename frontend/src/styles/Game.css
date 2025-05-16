@@ -95,6 +95,35 @@ dialog button:hover {
   text-shadow: 0 0 5px rgb(116,113,203);
 }
 
+/* Music controls styling */
+.music-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1rem;
+  z-index: 10;
+}
+
+.music-button {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 0.7rem;
+  padding: 0.5rem 1rem;
+  background: rgba(116,113,203, 0.7);
+  color: #000;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.music-button:hover {
+  transform: scale(1.05);
+  background: rgb(116,113,203);
+  box-shadow: 0 0 10px rgba(116,113,203, 0.5);
+}
+
 @media (max-width: 768px) {
   .game-container {
     width: 100%;
@@ -110,6 +139,15 @@ dialog button:hover {
   
   .player-names, .score-board {
     font-size: 16px;
+  }
+  
+  .music-controls {
+    bottom: 10px;
+  }
+  
+  .music-button {
+    font-size: 0.6rem;
+    padding: 0.4rem 0.8rem;
   }
 }
 

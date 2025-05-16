@@ -6,9 +6,7 @@ A modern take on the classic Pong game with multiplayer support, ranking system,
 - Real-time multiplayer gameplay
 - ELO ranking system
 - Retro-style graphics with modern smoothing
-- Original 80's inspired soundtrack
-- Match history and statistics
-- Player invites and random matchmaking
+- Player random matchmaking
 
 ## Prerequisites
 - Docker
