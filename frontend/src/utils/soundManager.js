@@ -18,56 +18,72 @@ class SoundManager {
   }
 
   init() {
-    if (this.initialized) return Promise.resolve();
+    console.log('Initializing SoundManager');
+    
+    if (this.initialized) {
+      console.log('Already initialized');
+      return Promise.resolve();
+    }
     
     return new Promise((resolve) => {
       try {
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        // Create audio context if it doesn't exist
+        if (!this.audioContext) {
+          console.log('Creating new AudioContext');
+          this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        
+        if (this.audioContext.state === 'suspended') {
+          console.log('AudioContext suspended, attempting to resume');
+          this.audioContext.resume().catch(e => {
+            console.warn('Could not resume audio context:', e);
+          });
+        }
+        
         console.log('Audio context created:', this.audioContext.state);
         
-        // Load and prepare audio files silently
-        const promises = [
-          this.hitSound.load(),
-          this.scoreSound.load(),
-          this.loadSound.load(),
-          this.gameOverSound.load(),
-          this.introSound.load()
-        ];
+        // Load audio files silently without playing them
+        console.log('Loading audio files');
         
-        Promise.all(promises)
-          .then(() => {
-            this.initialized = true;
-            console.log('Sound Manager initialized');
-            resolve();
-          })
-          .catch(err => {
-            console.warn('Sound initialization warning:', err);
-            this.initialized = true;
-            resolve();
-          });
+        // This prevents the "play() request was interrupted" error
+        const silentBuffer = this.audioContext.createBuffer(1, 1, 22050);
+        const silentSource = this.audioContext.createBufferSource();
+        silentSource.buffer = silentBuffer;
+        silentSource.connect(this.audioContext.destination);
+        silentSource.start();
+        
+        this.initialized = true;
+        console.log('Sound Manager initialized successfully');
+        resolve();
       } catch (e) {
         console.error('Failed to initialize audio context:', e);
-        this.initialized = true;
-        resolve();
+        this.initialized = false; // Mark as not initialized so we can try again
+        resolve(); // Resolve anyway to avoid blocking
       }
     });
   }
 
   ensureAudioContext() {
+    console.log('Ensuring audio context');
+    
     if (!this.audioContext) {
       try {
+        console.log('Creating new AudioContext');
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
       } catch (e) {
         console.error('Failed to create audio context:', e);
+        return null;
       }
     }
     
-    if (this.audioContext && this.audioContext.state === 'suspended') {
+    if (this.audioContext.state === 'suspended') {
+      console.log('AudioContext suspended, attempting to resume');
       this.audioContext.resume().catch(e => {
         console.error('Failed to resume audio context:', e);
       });
     }
     
+    console.log('Audio context state:', this.audioContext.state);
     return this.audioContext;
   }
 
@@ -91,14 +107,34 @@ class SoundManager {
   }
 
   startGenomeAudio(genome = null) {
+    console.log('Starting genome audio, initialized:', this.initialized);
     if (!this.initialized) {
       console.log('Initializing sound manager before playing genome audio');
-      return this.init().then(() => this.createRhythmicSound(genome || this.defaultGenome));
+      return this.init().then(() => {
+        this.isGenomeAudioPlaying = true; // Make sure to set this flag
+        return this.createRhythmicSound(genome || this.defaultGenome);
+      });
     }
+    this.isGenomeAudioPlaying = true; // Explicitly set the flag
     return this.createRhythmicSound(genome || this.defaultGenome);
   }
 
+  // Control maximum playback duration
+  setMaxPlaybackDuration(durationMs = 30000) {
+    // Stop any existing timeout
+    if (this.maxDurationTimeout) {
+      clearTimeout(this.maxDurationTimeout);
+    }
+    
+    // Set new timeout to stop all sounds after the specified duration
+    this.maxDurationTimeout = setTimeout(() => {
+      console.log(`Maximum playback duration (${durationMs}ms) reached, stopping sounds`);
+      this.stopAll();
+    }, durationMs);
+  }
+
   startSimpleGenomeAudio(genome = null) {
+    this.isGenomeAudioPlaying = true; // Make sure the flag is set
     return this.createRhythmicSound(genome || this.defaultGenome);
   }
 
@@ -106,11 +142,17 @@ class SoundManager {
     try {
       this.stopAll();
       
+      console.log('AudioContext before ensuring:', this.audioContext ? this.audioContext.state : 'none');
       if (!this.ensureAudioContext()) {
+        console.error('Failed to ensure audio context');
         return;
       }
+      console.log('AudioContext after ensuring:', this.audioContext.state);
       
-      console.log('Creating faster rhythmic sound with genome:', genome);
+      // Make sure we set this flag early
+      this.isGenomeAudioPlaying = true;
+      
+      console.log('Creating rhythmic sound with genome:', genome);
       
       const baseFreq = 80 + (Math.abs(this.hashCode(genome)) % 80);
       console.log('Base frequency:', baseFreq);
@@ -135,9 +177,18 @@ class SoundManager {
       console.log('Total pattern length (beats):', patternLength);
       console.log('Pattern duration (seconds):', (patternLength * beatInterval) / 1000);
       
+      // Set maximum duration for the generated sound (30 seconds default)
+      this.setMaxPlaybackDuration(30000);
+      
       let currentBeat = 0;
       const mainRhythmInterval = setInterval(() => {
+        // Debug log every 10 beats
+        if (currentBeat % 10 === 0) {
+          console.log('Main rhythm beat:', currentBeat, 'isPlaying:', this.isGenomeAudioPlaying);
+        }
+        
         if (!this.isGenomeAudioPlaying) {
+          console.log('Stopping main rhythm - isPlaying flag false');
           clearInterval(mainRhythmInterval);
           return;
         }
@@ -207,7 +258,6 @@ class SoundManager {
       
       this.createRhythmicPercussion(beatInterval, genome, baseFreq);
       
-      this.isGenomeAudioPlaying = true;
       console.log('Faster rhythmic genome audio started successfully');
     } catch (error) {
       console.error('Error creating rhythmic sound:', error);
@@ -253,7 +303,16 @@ class SoundManager {
 
   playNote(frequency, duration, volume, waveType = 'triangle') {
     try {
-      if (!this.audioContext) return;
+      if (!this.audioContext) {
+        console.error('No audio context available for playNote');
+        return;
+      }
+      
+      // Limit maximum duration of any single note to 3 seconds, but don't go below 100ms
+      const maxDuration = Math.min(3000, Math.max(100, duration));
+      
+      // Use safer volume levels
+      const safeVolume = Math.min(0.4, Math.max(0.05, volume));
       
       const osc = this.audioContext.createOscillator();
       const gainNode = this.audioContext.createGain();
@@ -261,24 +320,36 @@ class SoundManager {
       osc.type = waveType;
       osc.frequency.value = frequency;
       
-      gainNode.gain.value = 0;
+      // Simpler gain envelope
       gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
-      gainNode.gain.linearRampToValueAtTime(volume, this.audioContext.currentTime + 0.01);
-      gainNode.gain.linearRampToValueAtTime(volume * 0.7, this.audioContext.currentTime + (duration * 0.2) / 1000);
-      gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + duration / 1000);
+      gainNode.gain.linearRampToValueAtTime(safeVolume, this.audioContext.currentTime + 0.01);
+      gainNode.gain.setValueAtTime(safeVolume, this.audioContext.currentTime + (maxDuration - 50) / 1000);
+      gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + maxDuration / 1000);
       
       osc.connect(gainNode);
       gainNode.connect(this.audioContext.destination);
       
-      osc.start();
-      osc.stop(this.audioContext.currentTime + (duration + 50) / 1000);
+      console.log(`Playing note: freq=${frequency.toFixed(1)}, dur=${maxDuration}ms, vol=${safeVolume.toFixed(2)}`);
+      
+      const startTime = this.audioContext.currentTime;
+      const stopTime = startTime + (maxDuration + 50) / 1000;
+      
+      osc.start(startTime);
+      osc.stop(stopTime);
       
       osc.onended = () => {
-        osc.disconnect();
-        gainNode.disconnect();
+        try {
+          osc.disconnect();
+          gainNode.disconnect();
+        } catch (err) {
+          // Already disconnected, ignore
+        }
       };
+      
+      return { osc, gainNode };
     } catch (error) {
       console.error('Error playing note:', error);
+      return null;
     }
   }
 
@@ -292,12 +363,20 @@ class SoundManager {
       osc.type = 'sine';
       osc.frequency.value = frequency;
       
-      gainNode.gain.value = 0.06;
+      // Start with low gain and ramp up for smoother transition
+      gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+      gainNode.gain.linearRampToValueAtTime(0.06, this.audioContext.currentTime + 1);
+      
+      // Schedule automatic fade out and stop after 25 seconds
+      gainNode.gain.linearRampToValueAtTime(0.06, this.audioContext.currentTime + 20);
+      gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 25);
       
       osc.connect(gainNode);
       gainNode.connect(this.audioContext.destination);
       
       osc.start();
+      // Schedule automatic stop
+      osc.stop(this.audioContext.currentTime + 25);
       
       this.oscillators.push(osc);
       this.gainNodes.push(gainNode);
@@ -327,6 +406,8 @@ class SoundManager {
         detuneValues.push(detune);
       }
       
+      const maxDuration = 25; // Maximum duration in seconds
+      
       for (let i = 0; i < frequencies.length; i++) {
         const osc = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
@@ -335,7 +416,13 @@ class SoundManager {
         osc.frequency.value = frequencies[i];
         osc.detune.value = detuneValues[i];
         
-        gainNode.gain.value = 0.04 - (i * 0.005);
+        // Start with lower gain and fade in
+        gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
+        gainNode.gain.linearRampToValueAtTime(0.04 - (i * 0.005), this.audioContext.currentTime + 1);
+        
+        // Schedule fade out
+        gainNode.gain.linearRampToValueAtTime(0.04 - (i * 0.005), this.audioContext.currentTime + maxDuration - 5);
+        gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + maxDuration);
         
         const lfo = this.audioContext.createOscillator();
         const lfoGain = this.audioContext.createGain();
@@ -352,11 +439,15 @@ class SoundManager {
         osc.start();
         lfo.start();
         
+        // Schedule automatic stop
+        osc.stop(this.audioContext.currentTime + maxDuration);
+        lfo.stop(this.audioContext.currentTime + maxDuration);
+        
         this.oscillators.push(osc, lfo);
         this.gainNodes.push(gainNode, lfoGain);
       }
       
-      console.log('Evolving pad created');
+      console.log('Evolving pad created with auto-stop');
     } catch (error) {
       console.error('Error creating evolving pad:', error);
     }
@@ -371,13 +462,38 @@ class SoundManager {
   }
 
   stopAll() {
+    // Clear any maximum duration timeout
+    if (this.maxDurationTimeout) {
+      clearTimeout(this.maxDurationTimeout);
+      this.maxDurationTimeout = null;
+    }
+    
     if (this.oscillators && this.oscillators.length > 0) {
       console.log('Stopping', this.oscillators.length, 'oscillators');
       
+      const currentTime = this.audioContext ? this.audioContext.currentTime : 0;
+      
       for (let i = 0; i < this.oscillators.length; i++) {
         try {
-          this.oscillators[i].stop();
-          this.oscillators[i].disconnect();
+          // If we have gain nodes, fade them out quickly
+          if (this.gainNodes && this.gainNodes[i]) {
+            try {
+              this.gainNodes[i].gain.setValueAtTime(this.gainNodes[i].gain.value, currentTime);
+              this.gainNodes[i].gain.linearRampToValueAtTime(0, currentTime + 0.1);
+            } catch (e) {
+              console.warn('Error fading out gain node:', e);
+            }
+          }
+          
+          // Schedule stop for the oscillator
+          this.oscillators[i].stop(currentTime + 0.2);
+          setTimeout(() => {
+            try {
+              this.oscillators[i].disconnect();
+            } catch (e) {
+              // Ignore - already disconnected
+            }
+          }, 250);
         } catch (e) {
           console.warn('Error stopping oscillator:', e);
         }
