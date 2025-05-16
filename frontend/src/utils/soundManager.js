@@ -120,17 +120,23 @@ class SoundManager {
   }
 
   // Control maximum playback duration
-  setMaxPlaybackDuration(durationMs = 30000) {
+  setMaxPlaybackDuration(durationMs = 30000, shouldAutoStop = false) {
     // Stop any existing timeout
     if (this.maxDurationTimeout) {
       clearTimeout(this.maxDurationTimeout);
+      this.maxDurationTimeout = null;
     }
     
-    // Set new timeout to stop all sounds after the specified duration
-    this.maxDurationTimeout = setTimeout(() => {
-      console.log(`Maximum playback duration (${durationMs}ms) reached, stopping sounds`);
-      this.stopAll();
-    }, durationMs);
+    // Only set the timeout if shouldAutoStop is true
+    if (shouldAutoStop) {
+      console.log(`Setting maximum playback duration: ${durationMs}ms`);
+      this.maxDurationTimeout = setTimeout(() => {
+        console.log(`Maximum playback duration (${durationMs}ms) reached, stopping sounds`);
+        this.stopAll();
+      }, durationMs);
+    } else {
+      console.log('Continuous playback enabled - no automatic stop');
+    }
   }
 
   startSimpleGenomeAudio(genome = null) {
@@ -177,8 +183,9 @@ class SoundManager {
       console.log('Total pattern length (beats):', patternLength);
       console.log('Pattern duration (seconds):', (patternLength * beatInterval) / 1000);
       
-      // Set maximum duration for the generated sound (30 seconds default)
-      this.setMaxPlaybackDuration(30000);
+      // Set maximum duration for the generated sound but DON'T auto-stop
+      // Pass false as second parameter to indicate no auto-stop
+      this.setMaxPlaybackDuration(30000, false);
       
       let currentBeat = 0;
       const mainRhythmInterval = setInterval(() => {
@@ -367,16 +374,15 @@ class SoundManager {
       gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
       gainNode.gain.linearRampToValueAtTime(0.06, this.audioContext.currentTime + 1);
       
-      // Schedule automatic fade out and stop after 25 seconds
-      gainNode.gain.linearRampToValueAtTime(0.06, this.audioContext.currentTime + 20);
-      gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + 25);
+      // Keep constant volume after initial ramp-up instead of auto-stopping
+      gainNode.gain.setValueAtTime(0.06, this.audioContext.currentTime + 20);
       
       osc.connect(gainNode);
       gainNode.connect(this.audioContext.destination);
       
       osc.start();
-      // Schedule automatic stop
-      osc.stop(this.audioContext.currentTime + 25);
+      
+      // Don't schedule automatic stop - will be stopped when game ends
       
       this.oscillators.push(osc);
       this.gainNodes.push(gainNode);
@@ -406,8 +412,6 @@ class SoundManager {
         detuneValues.push(detune);
       }
       
-      const maxDuration = 25; // Maximum duration in seconds
-      
       for (let i = 0; i < frequencies.length; i++) {
         const osc = this.audioContext.createOscillator();
         const gainNode = this.audioContext.createGain();
@@ -420,9 +424,7 @@ class SoundManager {
         gainNode.gain.setValueAtTime(0, this.audioContext.currentTime);
         gainNode.gain.linearRampToValueAtTime(0.04 - (i * 0.005), this.audioContext.currentTime + 1);
         
-        // Schedule fade out
-        gainNode.gain.linearRampToValueAtTime(0.04 - (i * 0.005), this.audioContext.currentTime + maxDuration - 5);
-        gainNode.gain.linearRampToValueAtTime(0, this.audioContext.currentTime + maxDuration);
+        // Keep volume stable - don't schedule fadeout
         
         const lfo = this.audioContext.createOscillator();
         const lfoGain = this.audioContext.createGain();
@@ -439,15 +441,13 @@ class SoundManager {
         osc.start();
         lfo.start();
         
-        // Schedule automatic stop
-        osc.stop(this.audioContext.currentTime + maxDuration);
-        lfo.stop(this.audioContext.currentTime + maxDuration);
+        // Don't schedule automatic stops
         
         this.oscillators.push(osc, lfo);
         this.gainNodes.push(gainNode, lfoGain);
       }
       
-      console.log('Evolving pad created with auto-stop');
+      console.log('Evolving pad created for continuous playback');
     } catch (error) {
       console.error('Error creating evolving pad:', error);
     }
