@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import '../styles/Welcome.css';
@@ -8,6 +8,7 @@ import soundManager from '../utils/soundManager';
 const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
   const [rankings, setRankings] = useState([]);
   const [showTitle, setShowTitle] = useState(false);
+  const [audioStarted, setAudioStarted] = useState(false);
   const titleRef = useRef();
   const navigate = useNavigate();
 
@@ -60,19 +61,38 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
     return () => socket.disconnect();
   }, []);
 
-  // Add effect for title animation and sound
-  useEffect(() => {
-    const timer = setTimeout(() => {
+  // Add handler to start audio after user interaction
+  const handleStartAudio = useCallback(() => {
+    if (!audioStarted) {
+      console.log('Starting audio from user interaction');
       setShowTitle(true);
-      
       soundManager.playWithErrorHandling(
         () => soundManager.playIntroSound(),
         'Intro sound failed to play'
       );
+      setAudioStarted(true);
+    }
+  }, [audioStarted]);
+
+  // Add effect for title animation and sound
+  useEffect(() => {
+    // Show title animation without sound initially
+    const timer = setTimeout(() => {
+      setShowTitle(true);
     }, 100);
 
-    return () => clearTimeout(timer);
-  }, []);
+    // Setup click listener to start audio
+    if (!audioStarted) {
+      document.addEventListener('click', handleStartAudio, { once: true });
+      document.addEventListener('touchstart', handleStartAudio, { once: true });
+    }
+    
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('click', handleStartAudio);
+      document.removeEventListener('touchstart', handleStartAudio);
+    };
+  }, [audioStarted, handleStartAudio]);
 
   const handleStartGame = () => {
     // if we have a saved username, use it directly
