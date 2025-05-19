@@ -7,8 +7,9 @@ A modern take on the classic Pong game with multiplayer support, ranking system,
 - ELO ranking system
 - Retro-style graphics with modern smoothing
 - Original 80's inspired soundtrack
+- Genome based, procedural music track
 - Match history and statistics
-- Player invites and random matchmaking
+- Random player matchmaking
 
 ## Prerequisites
 - Docker
@@ -18,7 +19,7 @@ A modern take on the classic Pong game with multiplayer support, ranking system,
 
 1. Clone the repository:
 bash
-git clone https://github.com/yourusername/k-pong.git
+git clone https://github.com/escapeSeq/k-pong.git
 cd k-pong
 
 2. Start the application:
@@ -33,22 +34,18 @@ http://localhost:3000
 ## Gameplay
 
 1. Welcome screen:
-
-- Choose between 1-player or 2-player mode
 - Enter your name and start the game
 
 2. Gameplay:
 
-- Use the left and right arrow keys to move the paddle
+- Use up and down arrow keys, or mouse, to move the paddle
 - Try to hit the ball past your opponent's paddle
 - First to score 5 points wins
 
 3. Game Over:
 
 - See your final score and rank
-- Invite friends to play again
 - View match history and statistics
-
 
 ## Technologies Used
 
