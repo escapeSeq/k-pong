@@ -2,6 +2,9 @@
 
 A modern take on the classic Pong game with multiplayer support, ranking system, and retro vibes!
 
+<img src="screenshots/k-pong-game.png" width="45%" alt="In game screenshot">
+<img src="screenshots/k-pong-won.png" width="45%" alt="End game screenshot">
+
 ## Features
 - Real-time multiplayer gameplay
 - ELO ranking system
