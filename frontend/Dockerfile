@@ -10,5 +10,6 @@ RUN npm install
 COPY public/ public/
 COPY src/ src/
 
-#EXPOSE 3000
+ENV REACT_APP_BACKEND_URL=https://k-pong-backend.fly.dev
+EXPOSE 3000
 CMD ["npm", "start"] 

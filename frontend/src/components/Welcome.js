@@ -16,9 +16,8 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
   useEffect(() => {
     const fetchRankings = async () => {
       try {
-        console.log('Fetching rankings...');
-        
-        // Use the backend as a proxy
+        console.log('Fetching rankings from', BACKEND_URL);
+
         const response = await fetch(`${BACKEND_URL}/api/rankings/top?limit=10`, {
           method: 'GET',
           credentials: 'include', // Include cookies for CORS requests
@@ -30,7 +29,14 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
         if (!response.ok) {
           throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        
+
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error(
+            `Expected JSON from backend at ${BACKEND_URL}, got ${contentType}`
+          );
+        }
+
         const data = await response.json();
         console.log('Received rankings:', data);
         setRankings(data);
@@ -46,7 +52,8 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
     // Set up socket listener for ranking updates
     const socket = io(BACKEND_URL, {
       withCredentials: true,
-      transports: ['websocket']
+      transports: ['websocket', 'polling'],
+      path: '/socket.io/',
     });
 
     socket.on('connect', () => {

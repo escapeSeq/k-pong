@@ -18,6 +18,26 @@ A modern take on the classic Pong game with multiplayer support, ranking system,
 - Docker
 - Docker Compose
 
+## Fly.io deployment
+
+Three apps are used in production:
+
+| App | URL |
+|-----|-----|
+| Frontend | `https://k-pong.fly.dev` |
+| Backend | `https://k-pong-backend.fly.dev` |
+| Player service | `k-pong-player-service.internal:5001` (private) |
+
+The frontend must call the **backend** URL, not itself. Set `REACT_APP_BACKEND_URL=https://k-pong-backend.fly.dev` on the frontend app (see `frontend/fly.toml`).
+
+Redeploy after config changes:
+
+```bash
+fly deploy --config frontend/fly.toml
+fly deploy --config backend/fly.toml
+fly deploy --config player-service/fly.toml
+```
+
 ## Getting Started
 
 1. Clone the repository:

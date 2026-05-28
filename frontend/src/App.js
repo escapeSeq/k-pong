@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Welcome from './components/Welcome';
 import Game from './components/Game';
 import GameOver from './components/GameOver';
@@ -32,7 +32,12 @@ function App() {
   };
 
   return (
-    <Router>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <div className="App">
         <Routes>
           <Route 
@@ -75,7 +80,7 @@ function App() {
           />
         </Routes>
       </div>
-    </Router>
+    </BrowserRouter>
   );
 }
 
