@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 import '../styles/Game.css';
-import { STORAGE_KEY, BACKEND_URL, INITIAL_RATING } from '../constants';
+import { STORAGE_KEY, getBackendUrl, INITIAL_RATING } from '../constants';
 import soundManager from '../utils/soundManager';
 
 // Add this outside of any component, at the top of the file
@@ -183,7 +183,7 @@ const Game = ({ gameState, username }) => {
 
   const testBackendConnection = async () => {
     try {
-      const response = await fetch(`${BACKEND_URL || 'http://localhost:5000'}/health`);
+      const response = await fetch(`${getBackendUrl()}/health`);
       const data = await response.json();
       console.log('Backend health check:', data);
       return true;
@@ -230,7 +230,9 @@ const Game = ({ gameState, username }) => {
 
     console.log('Setting up socket for username:', username);
 
-    const newSocket = io(BACKEND_URL, {
+    const backendUrl = getBackendUrl();
+    console.log('Connecting game socket to', backendUrl);
+    const newSocket = io(backendUrl, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
       path: '/socket.io/',

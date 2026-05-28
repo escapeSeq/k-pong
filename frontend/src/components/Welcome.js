@@ -2,7 +2,7 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import '../styles/Welcome.css';
-import { BACKEND_URL } from '../constants';
+import { getBackendUrl } from '../constants';
 import soundManager from '../utils/soundManager';
 
 const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
@@ -14,11 +14,13 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
 
   // Fetch rankings on component mount
   useEffect(() => {
+    const backendUrl = getBackendUrl();
+
     const fetchRankings = async () => {
       try {
-        console.log('Fetching rankings from', BACKEND_URL);
+        console.log('Fetching rankings from', backendUrl);
 
-        const response = await fetch(`${BACKEND_URL}/api/rankings/top?limit=10`, {
+        const response = await fetch(`${backendUrl}/api/rankings/top?limit=10`, {
           method: 'GET',
           credentials: 'include', // Include cookies for CORS requests
           headers: {
@@ -33,7 +35,7 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
         const contentType = response.headers.get('content-type') || '';
         if (!contentType.includes('application/json')) {
           throw new Error(
-            `Expected JSON from backend at ${BACKEND_URL}, got ${contentType}`
+            `Expected JSON from backend at ${backendUrl}, got ${contentType}`
           );
         }
 
@@ -50,7 +52,7 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
     fetchRankings();
 
     // Set up socket listener for ranking updates
-    const socket = io(BACKEND_URL, {
+    const socket = io(backendUrl, {
       withCredentials: true,
       transports: ['websocket', 'polling'],
       path: '/socket.io/',

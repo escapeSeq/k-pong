@@ -28,7 +28,10 @@ Three apps are used in production:
 | Backend | `https://k-pong-backend.fly.dev` |
 | Player service | `k-pong-player-service.internal:5001` (private) |
 
-The frontend must call the **backend** URL, not itself. Set `REACT_APP_BACKEND_URL=https://k-pong-backend.fly.dev` on the frontend app (see `frontend/fly.toml`).
+The frontend must call the **backend** URL, not itself. On deploy, `docker-entrypoint.sh` writes `public/config.js` from `REACT_APP_BACKEND_URL` (set in `frontend/fly.toml`).
+
+After deploy, hard-refresh the browser (Ctrl+Shift+R) and confirm the console shows:
+`Fetching rankings from https://k-pong-backend.fly.dev`
 
 Redeploy after config changes:
 
