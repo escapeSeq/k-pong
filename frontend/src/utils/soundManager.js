@@ -15,75 +15,53 @@ class SoundManager {
     
     this.isGenomeAudioPlaying = false;
     this.initialized = false;
+    this.audioUnlocked = false;
   }
 
   init() {
-    console.log('Initializing SoundManager');
-    
     if (this.initialized) {
-      console.log('Already initialized');
       return Promise.resolve();
     }
-    
+
     return new Promise((resolve) => {
       try {
-        // Create audio context if it doesn't exist
         if (!this.audioContext) {
-          console.log('Creating new AudioContext');
           this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
-        
-        if (this.audioContext.state === 'suspended') {
-          console.log('AudioContext suspended, attempting to resume');
-          this.audioContext.resume().catch(e => {
-            console.warn('Could not resume audio context:', e);
-          });
-        }
-        
-        console.log('Audio context created:', this.audioContext.state);
-        
-        // Load audio files silently without playing them
-        console.log('Loading audio files');
-        
-        // This prevents the "play() request was interrupted" error
-        const silentBuffer = this.audioContext.createBuffer(1, 1, 22050);
-        const silentSource = this.audioContext.createBufferSource();
-        silentSource.buffer = silentBuffer;
-        silentSource.connect(this.audioContext.destination);
-        silentSource.start();
-        
         this.initialized = true;
-        console.log('Sound Manager initialized successfully');
         resolve();
       } catch (e) {
         console.error('Failed to initialize audio context:', e);
-        this.initialized = false; // Mark as not initialized so we can try again
-        resolve(); // Resolve anyway to avoid blocking
+        this.initialized = false;
+        resolve();
       }
     });
   }
 
-  ensureAudioContext() {
-    console.log('Ensuring audio context');
-    
+  /** Call once from a click/touch handler before playing Web Audio. */
+  async unlockFromUserGesture() {
+    if (this.audioUnlocked && this.audioContext?.state === 'running') {
+      return true;
+    }
+
+    await this.init();
+
     if (!this.audioContext) {
-      try {
-        console.log('Creating new AudioContext');
-        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      } catch (e) {
-        console.error('Failed to create audio context:', e);
-        return null;
-      }
+      return false;
     }
-    
+
     if (this.audioContext.state === 'suspended') {
-      console.log('AudioContext suspended, attempting to resume');
-      this.audioContext.resume().catch(e => {
-        console.error('Failed to resume audio context:', e);
-      });
+      await this.audioContext.resume();
     }
-    
-    console.log('Audio context state:', this.audioContext.state);
+
+    this.audioUnlocked = this.audioContext.state === 'running';
+    return this.audioUnlocked;
+  }
+
+  ensureAudioContext() {
+    if (!this.audioUnlocked || !this.audioContext) {
+      return null;
+    }
     return this.audioContext;
   }
 
@@ -103,19 +81,17 @@ class SoundManager {
   }
 
   startBackgroundMusic() {
-    this.startGenomeAudio(this.defaultGenome);
+    if (!this.audioUnlocked) {
+      return Promise.resolve();
+    }
+    return this.startGenomeAudio(this.defaultGenome);
   }
 
   startGenomeAudio(genome = null) {
-    console.log('Starting genome audio, initialized:', this.initialized);
-    if (!this.initialized) {
-      console.log('Initializing sound manager before playing genome audio');
-      return this.init().then(() => {
-        this.isGenomeAudioPlaying = true; // Make sure to set this flag
-        return this.createRhythmicSound(genome || this.defaultGenome);
-      });
+    if (!this.audioUnlocked) {
+      return Promise.resolve();
     }
-    this.isGenomeAudioPlaying = true; // Explicitly set the flag
+    this.isGenomeAudioPlaying = true;
     return this.createRhythmicSound(genome || this.defaultGenome);
   }
 
@@ -140,25 +116,26 @@ class SoundManager {
   }
 
   startSimpleGenomeAudio(genome = null) {
-    this.isGenomeAudioPlaying = true; // Make sure the flag is set
+    if (!this.audioUnlocked) {
+      return Promise.resolve();
+    }
+    this.isGenomeAudioPlaying = true;
     return this.createRhythmicSound(genome || this.defaultGenome);
   }
 
   createRhythmicSound(genome) {
     try {
-      this.stopAll();
-      
-      console.log('AudioContext before ensuring:', this.audioContext ? this.audioContext.state : 'none');
-      if (!this.ensureAudioContext()) {
-        console.error('Failed to ensure audio context');
+      if (!this.audioUnlocked) {
         return;
       }
-      console.log('AudioContext after ensuring:', this.audioContext.state);
-      
-      // Make sure we set this flag early
+
+      this.stopAll();
+
+      if (!this.ensureAudioContext()) {
+        return;
+      }
+
       this.isGenomeAudioPlaying = true;
-      
-      console.log('Creating rhythmic sound with genome:', genome);
       
       const baseFreq = 80 + (Math.abs(this.hashCode(genome)) % 80);
       console.log('Base frequency:', baseFreq);
@@ -335,8 +312,6 @@ class SoundManager {
       
       osc.connect(gainNode);
       gainNode.connect(this.audioContext.destination);
-      
-      console.log(`Playing note: freq=${frequency.toFixed(1)}, dur=${maxDuration}ms, vol=${safeVolume.toFixed(2)}`);
       
       const startTime = this.audioContext.currentTime;
       const stopTime = startTime + (maxDuration + 50) / 1000;
@@ -617,34 +592,7 @@ class SoundManager {
   }
 
   initializeOnUserInteraction() {
-    if (this.initialized) {
-      console.log('Sound Manager already initialized');
-      return Promise.resolve();
-    }
-    
-    console.log('Initializing Sound Manager on user interaction');
-    return this.init().then(() => {
-      // Unlock audio context first
-      if (this.audioContext && this.audioContext.state === 'suspended') {
-        this.audioContext.resume();
-      }
-      
-      // Better approach: Create and play a silent audio buffer to unlock audio
-      try {
-        const buffer = this.audioContext.createBuffer(1, 1, 22050);
-        const source = this.audioContext.createBufferSource();
-        source.buffer = buffer;
-        source.connect(this.audioContext.destination);
-        source.start(0);
-        
-        // Don't try to use play/pause for unlocking as it causes AbortError
-        console.log('Audio context unlocked with buffer source');
-        return Promise.resolve();
-      } catch (e) {
-        console.warn('Could not unlock audio context with buffer, falling back', e);
-        return Promise.resolve();
-      }
-    });
+    return this.unlockFromUserGesture();
   }
 }
 

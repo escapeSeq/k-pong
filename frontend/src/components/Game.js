@@ -294,8 +294,7 @@ const Game = ({ gameState, username }) => {
       setGameData(data);
       prevGameDataRef.current = data;
       
-      // Start background music only if genome music is not active
-      if (!isGenomeMusicActive) {
+      if (audioStarted && !isGenomeMusicActive) {
         soundManager.startBackgroundMusic();
       }
     });
@@ -387,7 +386,7 @@ const Game = ({ gameState, username }) => {
         cleanupSocket();
       }
     };
-  }, [cleanupSocket, isConnecting, navigate, isGenomeMusicActive, isBotMode]);
+  }, [cleanupSocket, isConnecting, navigate, isGenomeMusicActive, isBotMode, audioStarted]);
 
   // Setup keyboard listeners
   useEffect(() => {
@@ -471,25 +470,6 @@ const Game = ({ gameState, username }) => {
     };
   }, [setupSocket, cleanupSocket, isConnecting, username]);
 
-  // Add sound initialization with genome support
-  useEffect(() => {
-    // Only start default background music if genome music is not active
-    if (!isGenomeMusicActive) {
-      soundManager.playWithErrorHandling(
-        () => soundManager.startBackgroundMusic(),
-        'Background music failed to start'
-      );
-    }
-    
-    return () => {
-      try {
-        soundManager.stopAll();
-      } catch (error) {
-        console.warn('Failed to stop sounds:', error);
-      }
-    };
-  }, [isGenomeMusicActive]);
-
   // Add this inside your existing useEffect for game setup
   useEffect(() => {
     // Add 'playing' class to body when game starts
@@ -540,14 +520,11 @@ const Game = ({ gameState, username }) => {
           soundManager.stopAll();
           
           // Add a small delay before starting new audio
-          setTimeout(() => {
-            try {
+          soundManager.unlockFromUserGesture().then((ok) => {
+            if (ok) {
               soundManager.startGenomeAudio(genome);
-              console.log('Genome music started successfully');
-            } catch (error) {
-              console.error('Error starting genome music:', error);
             }
-          }, 100);
+          });
         } catch (error) {
           console.error('Error in genome music toggle:', error);
         }
@@ -564,48 +541,57 @@ const Game = ({ gameState, username }) => {
       soundManager.stopAll();
       
       // Add a small delay before starting new audio
-      setTimeout(() => {
-        try {
+      soundManager.unlockFromUserGesture().then((ok) => {
+        if (ok) {
           soundManager.startBackgroundMusic();
-          console.log('Default music started successfully');
-        } catch (error) {
-          console.error('Error starting default music:', error);
         }
-      }, 100);
+      });
     } catch (error) {
       console.error('Error in reset to default music:', error);
     }
   };
 
   // Add a click handler to start audio after user interaction
-  const handleStartAudio = useCallback(() => {
-    if (!audioStarted) {
-      console.log('Starting audio from user interaction');
-      soundManager.stopAll();
+  const handleStartAudio = useCallback(async () => {
+    if (audioStarted) {
+      return;
+    }
+    const unlocked = await soundManager.unlockFromUserGesture();
+    if (!unlocked) {
+      return;
+    }
+    soundManager.stopAll();
+    if (isGenomeMusicActive && genomeInput) {
+      soundManager.startGenomeAudio(genomeInput);
+    } else {
       soundManager.startSimpleGenomeAudio();
-      setAudioStarted(true);
     }
-  }, [audioStarted]);
+    setAudioStarted(true);
+  }, [audioStarted, isGenomeMusicActive, genomeInput]);
 
-  // Add effect to set up click listener
   useEffect(() => {
-    if (!audioStarted) {
-      document.addEventListener('click', handleStartAudio, { once: true });
-      document.addEventListener('touchstart', handleStartAudio, { once: true });
-      
-      // Also try to start automatically
-      const timer = setTimeout(() => {
-        console.log('Attempting automatic audio start');
-        handleStartAudio();
-      }, 1000);
-      
-      return () => {
-        document.removeEventListener('click', handleStartAudio);
-        document.removeEventListener('touchstart', handleStartAudio);
-        clearTimeout(timer);
-      };
+    if (audioStarted) {
+      return undefined;
     }
+
+    document.addEventListener('click', handleStartAudio, { once: true });
+    document.addEventListener('touchstart', handleStartAudio, { once: true });
+
+    return () => {
+      document.removeEventListener('click', handleStartAudio);
+      document.removeEventListener('touchstart', handleStartAudio);
+    };
   }, [audioStarted, handleStartAudio]);
+
+  useEffect(() => {
+    return () => {
+      try {
+        soundManager.stopAll();
+      } catch (error) {
+        console.warn('Failed to stop sounds:', error);
+      }
+    };
+  }, []);
 
   return (
     <div className="game-container" ref={containerRef} style={{ touchAction: 'none' }}>

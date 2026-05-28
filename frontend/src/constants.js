@@ -9,17 +9,29 @@ export const INITIAL_RATING = 1000;
 const DEFAULT_LOCAL_BACKEND = 'http://localhost:5301';
 const DEFAULT_FLY_BACKEND = 'https://k-pong-backend.fly.dev';
 
+function normalizeBackendUrl(url) {
+  const trimmed = url.replace(/\/$/, '');
+  // Legacy/incorrect local port (backend listens on 5301 in docker-compose)
+  if (
+    trimmed === 'http://localhost:5000' ||
+    trimmed === 'http://127.0.0.1:5000'
+  ) {
+    return DEFAULT_LOCAL_BACKEND;
+  }
+  return trimmed;
+}
+
 /** Resolve backend URL at call time (after public/config.js has loaded). */
 export function getBackendUrl() {
   const runtime =
     typeof window !== 'undefined' && window.__K_PONG_CONFIG__?.BACKEND_URL;
   if (runtime) {
-    return runtime.replace(/\/$/, '');
+    return normalizeBackendUrl(runtime);
   }
 
   const fromEnv = process.env.REACT_APP_BACKEND_URL;
   if (fromEnv) {
-    return fromEnv.replace(/\/$/, '');
+    return normalizeBackendUrl(fromEnv);
   }
 
   if (typeof window !== 'undefined') {
