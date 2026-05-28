@@ -28,19 +28,19 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL,
+    origin: process.env.FRONTEND_URL || '*',
     methods: ['GET', 'POST'],
     credentials: true,
     allowedHeaders: ['*']
   },
   allowEIO3: true,
-  transports: ['websocket'],
+  transports: ['websocket', 'polling'],
   path: '/socket.io/',
   connectTimeout: 45000,
   pingInterval: 10000,
   pingTimeout: 5000,
   cookie: false,
-  allowUpgrades: false,
+  allowUpgrades: true,
   perMessageDeflate: false
 });
 
@@ -97,11 +97,24 @@ try {
   io.engine.on("headers", (headers, req) => {
     console.log('Headers being sent:', headers);
     console.log('Request headers:', req.headers);
+    console.log('Request origin:', req.headers.origin);
+    console.log('Request host:', req.headers.host);
   });
 
   io.engine.on("initial_headers", (headers, req) => {
     console.log('Initial headers being sent:', headers);
     console.log('Initial request headers:', req.headers);
+    console.log('Initial request origin:', req.headers.origin);
+    console.log('Initial request host:', req.headers.host);
+  });
+
+  io.engine.on("upgrade", (req, socket, head) => {
+    console.log('WebSocket upgrade request:', {
+      url: req.url,
+      headers: req.headers,
+      origin: req.headers.origin,
+      host: req.headers.host
+    });
   });
 
   io.on('connection', (socket) => {

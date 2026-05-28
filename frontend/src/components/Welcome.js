@@ -94,21 +94,24 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
     };
   }, [audioStarted, handleStartAudio]);
 
-  const handleStartGame = () => {
-    // if we have a saved username, use it directly
-    if (savedUsername) {
+  const startGameWithMode = (gameMode) => {
+    const navigateToGame = (name) => {
       setGameState(prev => ({
         ...prev,
+        gameMode,
         player1: {
-          name: savedUsername,
+          name,
           rating: 800
         }
       }));
       navigate('/game');
+    };
+
+    if (savedUsername) {
+      navigateToGame(savedUsername);
       return;
     }
 
-    // Otherwise show the username modal
     const modal = document.createElement('dialog');
     modal.innerHTML = `
       <form method="dialog">
@@ -119,25 +122,21 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
         </div>
       </form>
     `;
-    
+
     document.body.appendChild(modal);
     modal.showModal();
 
     modal.querySelector('form').onsubmit = (e) => {
       e.preventDefault();
       const username = document.getElementById('username').value;
-      onUsernameSet(username); // Use the passed handler
-      setGameState(prev => ({
-        ...prev,
-        player1: {
-          name: username,
-          rating: 800
-        }
-      }));
-      navigate('/game');
+      onUsernameSet(username);
+      navigateToGame(username);
       modal.remove();
     };
   };
+
+  const handleStartGame = () => startGameWithMode('online');
+  const handleStartBotGame = () => startGameWithMode('bot');
 
   return (
     <div className="welcome">
@@ -147,14 +146,20 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
       </div>
       
       <div className="menu">
-        <button onClick={handleStartGame}>
-          {savedUsername ? `Play as ${savedUsername}` : 'Start Game'}
-        </button>
+        <div className="play-buttons">
+          <button onClick={handleStartGame}>
+            {savedUsername ? `Play Online as ${savedUsername}` : 'Play Online'}
+          </button>
+          <button className="secondary" onClick={handleStartBotGame}>
+            Play vs Bot
+          </button>
+        </div>
         <div className="instructions">
           <h2>How to Play</h2>
           <p>Move your paddle to hit the ball past your opponent!</p>
           <p>Use UP/DOWN arrow keys to move your paddle</p>
           <p>First to 5 points wins!</p>
+          <p>Play vs Bot for practice against K-Bot — your rating is not affected</p>
         </div>
         
         <div className="rankings">

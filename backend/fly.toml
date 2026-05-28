@@ -6,6 +6,11 @@
 app = 'k-pong-backend'
 primary_region = 'arn'
 
+[env]
+  PORT = "8080"
+  NODE_ENV = "production"
+  FRONTEND_URL = "https://k-pong.fly.dev"
+
 [build]
 
 [http_service]
