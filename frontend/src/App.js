@@ -48,8 +48,8 @@ function App() {
           <Route 
             path="/game" 
             element={
-              <Game 
-                gameState={gameState} 
+              <Game
+                gameState={gameState}
                 onUsernameSet={handleUsernameSet}
                 username={username}
               />
@@ -63,6 +63,7 @@ function App() {
                 onPlayAgain={() => {
                   setGameState(prev => ({
                     ...prev,
+                    gameMode: null,
                     player1: {
                       name: username,
                       rating: 800

@@ -8,7 +8,9 @@ import soundManager from '../utils/soundManager';
 // Add this outside of any component, at the top of the file
 let usernamePromptShownForSession = false;
 
-const Game = ({ gameState, onUsernameSet, username }) => {
+const Game = ({ gameState, username }) => {
+  const gameMode = gameState?.gameMode || 'online';
+  const isBotMode = gameMode === 'bot';
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
   const modalRef = useRef(null);
@@ -52,7 +54,10 @@ const Game = ({ gameState, onUsernameSet, username }) => {
       ctx.fillStyle = 'rgb(116,113,203)';
       ctx.textAlign = 'center';
       const dots = '.'.repeat(Math.floor(Date.now() / 500) % 4);
-      ctx.fillText(`Waiting for opponent${dots}`, ctx.canvas.width / 2, ctx.canvas.height / 2);
+      const waitingText = isBotMode
+        ? 'Starting bot match'
+        : 'Waiting for opponent';
+      ctx.fillText(`${waitingText}${dots}`, ctx.canvas.width / 2, ctx.canvas.height / 2);
       return;
     }
     
@@ -78,7 +83,7 @@ const Game = ({ gameState, onUsernameSet, username }) => {
     ctx.beginPath();
     ctx.arc(ballX + ballSize/2, ballY + ballSize/2, ballSize/2, 0, Math.PI * 2);
     ctx.fill();
-  }, [gameData, isWaiting]);
+  }, [gameData, isWaiting, isBotMode]);
 
   // Handle keyboard input
   const handleKeyPress = useCallback((e) => {
@@ -255,8 +260,9 @@ const Game = ({ gameState, onUsernameSet, username }) => {
         socketId: newSocket.id
       };
 
-      console.log('Sending findGame with data:', playerData);
-      newSocket.emit('findGame', playerData);
+      const matchEvent = isBotMode ? 'findBotGame' : 'findGame';
+      console.log(`Sending ${matchEvent} with data:`, playerData);
+      newSocket.emit(matchEvent, playerData);
     });
 
     newSocket.on('connect_error', (error) => {
@@ -348,7 +354,9 @@ const Game = ({ gameState, onUsernameSet, username }) => {
           ...result,
           isWinner,
           message: isWinner ? 'You Won!' : 'You Lost!',
-          rating: result.ratings?.[socketRef.current?.id],
+          rating: result.isBotGame
+            ? undefined
+            : result.ratings?.[socketRef.current?.id],
           finalScore: result.finalScore || result.stats?.score
         }
       });
@@ -377,7 +385,7 @@ const Game = ({ gameState, onUsernameSet, username }) => {
         cleanupSocket();
       }
     };
-  }, [cleanupSocket, isConnecting, navigate, isGenomeMusicActive]);
+  }, [cleanupSocket, isConnecting, navigate, isGenomeMusicActive, isBotMode]);
 
   // Setup keyboard listeners
   useEffect(() => {

@@ -23,7 +23,12 @@ const GameOver = () => {
       <h1>{result.message}</h1>
       <div className="stats">
         <p>Final Score: {result.finalScore[0]} - {result.finalScore[1]}</p>
-        <p>New Rating: {result.rating}</p>
+        {!result.isBotGame && result.rating != null && (
+          <p>New Rating: {result.rating}</p>
+        )}
+        {result.isBotGame && (
+          <p>Practice match — rating unchanged</p>
+        )}
         <p>Game Duration: {Math.round((result.stats.duration || 0) / 1000)}s</p>
         <p>Total Hits: {result.stats.hits || 0}</p>
       </div>

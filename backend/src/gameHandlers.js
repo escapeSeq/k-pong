@@ -1,6 +1,14 @@
 const { calculateElo } = require('./utils/eloCalculator');
 const fetch = require('node-fetch');
 
+const BOT_NAME = 'K-Bot';
+const BOT_RATING = 1000;
+const BOT_SOCKET_ID = 'bot';
+const BOT_PADDLE_X = 0.95;
+const BALL_STEP = 0.0055;
+const BOT_PADDLE_DAMPING = 0.022; // Per-frame lerp toward aim (original slow setting)
+const BOT_TARGET_DAMPING = 0.04; // Smooths aim changes
+
 class GameHandlers {
   constructor(io) {
     this.io = io;
@@ -70,6 +78,11 @@ class GameHandlers {
       this.handleFindGame(socket, player);
     });
 
+    socket.on('findBotGame', (player) => {
+      if (!socket.connected) return;
+      this.handleFindBotGame(socket, player);
+    });
+
     socket.on('createInvite', (player) => {
       console.log('Player creating invite:', player);
       this.handleCreateInvite(socket, player);
@@ -85,6 +98,28 @@ class GameHandlers {
       console.log('Client disconnected:', socket.id, 'Reason:', reason);
       this.handleDisconnect(socket);
     });
+  }
+
+  handleFindBotGame(socket, player) {
+    for (const game of this.games.values()) {
+      if (game.players.some(p => p.socketId === socket.id)) {
+        return;
+      }
+    }
+
+    const gameId = Math.random().toString(36).substring(7);
+    socket.join(gameId);
+
+    const human = { ...player, socketId: socket.id, index: 0 };
+    const bot = {
+      name: BOT_NAME,
+      rating: BOT_RATING,
+      socketId: BOT_SOCKET_ID,
+      index: 1
+    };
+
+    console.log(`Creating bot game ${gameId} for ${player.name}`);
+    this.createGame(gameId, human, bot, { isBotGame: true });
   }
 
   handleFindGame(socket, player) {
@@ -192,14 +227,16 @@ class GameHandlers {
     }
   }
 
-  createGame(gameId, player1, player2) {
+  createGame(gameId, player1, player2, options = {}) {
     console.log(`Creating game ${gameId} for players:`, {
       player1: { ...player1, socketId: player1.socketId },
-      player2: { ...player2, socketId: player2.socketId }
+      player2: { ...player2, socketId: player2.socketId },
+      isBotGame: options.isBotGame
     });
 
     const gameState = {
       id: gameId,
+      isBotGame: Boolean(options.isBotGame),
       players: [
         { ...player1, index: 0, socketId: player1.socketId },
         { ...player2, index: 1, socketId: player2.socketId }
@@ -211,6 +248,8 @@ class GameHandlers {
         player1: { y: 0 },
         player2: { y: 0 }
       },
+      botAimY: 0,
+      botAimOffset: 0,
       startTime: Date.now()
     };
 
@@ -291,6 +330,38 @@ class GameHandlers {
     }, 1000 / 60); // 60 FPS
   }
 
+  updateBotPaddle(game) {
+    const paddle = game.paddles.player2;
+    const maxY = 0.95;
+
+    if (game.botAimY === undefined) {
+      game.botAimY = 0;
+    }
+
+    let idealTarget = game.ballPos.y;
+    const vx = game.ballVelocity.x * BALL_STEP;
+
+    if (vx > 0) {
+      const distX = BOT_PADDLE_X - game.ballPos.x;
+      const framesToPaddle = distX / vx;
+      if (framesToPaddle > 0 && framesToPaddle < 300) {
+        idealTarget =
+          game.ballPos.y + game.ballVelocity.y * BALL_STEP * framesToPaddle;
+      }
+      if (Math.random() < 0.015) {
+        game.botAimOffset = (Math.random() - 0.5) * 0.12;
+      }
+      idealTarget += game.botAimOffset || 0;
+    } else {
+      idealTarget = 0;
+      game.botAimOffset = (game.botAimOffset || 0) * 0.98;
+    }
+
+    game.botAimY += (idealTarget - game.botAimY) * BOT_TARGET_DAMPING;
+    paddle.y += (game.botAimY - paddle.y) * BOT_PADDLE_DAMPING;
+    paddle.y = Math.max(-maxY, Math.min(maxY, paddle.y));
+  }
+
   updateGameState(gameId) {
     const game = this.games.get(gameId);
     if (!game) return;
@@ -365,6 +436,10 @@ class GameHandlers {
         }
       }
     }
+
+    if (game.isBotGame) {
+      this.updateBotPaddle(game);
+    }
   }
 
   resetBall(game) {
@@ -385,6 +460,11 @@ class GameHandlers {
     if (!winner || !winner.name) {
       console.error('Invalid winner object:', winner);
       this.games.delete(gameId);
+      return;
+    }
+
+    if (game.isBotGame) {
+      this.endBotGame(gameId, game, winner);
       return;
     }
 
@@ -469,6 +549,25 @@ class GameHandlers {
         this.games.delete(gameId);
       });
     });
+  }
+
+  endBotGame(gameId, game, winner) {
+    this.io.to(gameId).emit('gameOver', {
+      winner: winner.socketId,
+      stats: {
+        duration: Date.now() - game.startTime,
+        maxSpeed: Math.max(
+          Math.abs(game.ballVelocity.x || 0),
+          Math.abs(game.ballVelocity.y || 0)
+        ),
+        hits: game.hits || 0,
+        score: game.score || [0, 0]
+      },
+      finalScore: game.score || [0, 0],
+      isBotGame: true
+    });
+
+    this.games.delete(gameId);
   }
 
   updatePlayerRanking(playerName, newRating) {

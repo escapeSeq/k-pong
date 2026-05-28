@@ -68,6 +68,13 @@
   overflow-y: visible;
 }
 
+.play-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+}
+
 button {
   padding: 1rem 2rem;
   font-size: 1.5rem;
@@ -85,6 +92,16 @@ button:hover {
   transform: scale(1.05);
   background: rgba(116,113,203, 0.8);
   box-shadow: 0 0 15px rgba(116,113,203, 0.2);
+}
+
+button.secondary {
+  background: transparent;
+  color: rgb(116, 113, 203);
+  border: 2px solid rgb(116, 113, 203);
+}
+
+button.secondary:hover {
+  background: rgba(116, 113, 203, 0.15);
 }
 
 .instructions, .rankings {
