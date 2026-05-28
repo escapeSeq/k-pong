@@ -249,11 +249,6 @@ const Game = ({ gameState, username }) => {
     newSocket.on('connect', () => {
       if (!isMounted.current) return;
       console.log('Socket connected with ID:', newSocket.id, 'Username:', username);
-      
-      soundManager.playWithErrorHandling(
-        () => soundManager.playLoadSound(),
-        'Connection sound failed to play'
-      );
 
       const playerData = {
         name: username,
@@ -561,6 +556,7 @@ const Game = ({ gameState, username }) => {
       return;
     }
     soundManager.stopAll();
+    soundManager.playLoadSound();
     if (isGenomeMusicActive && genomeInput) {
       soundManager.startGenomeAudio(genomeInput);
     } else {

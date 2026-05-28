@@ -38,23 +38,38 @@ class SoundManager {
     });
   }
 
-  /** Call once from a click/touch handler before playing Web Audio. */
+  /** Call once from a click/touch handler before any audio (Web Audio or MP3). */
   async unlockFromUserGesture() {
-    if (this.audioUnlocked && this.audioContext?.state === 'running') {
+    if (this.audioUnlocked) {
       return true;
     }
 
     await this.init();
 
-    if (!this.audioContext) {
-      return false;
-    }
-
-    if (this.audioContext.state === 'suspended') {
+    if (this.audioContext?.state === 'suspended') {
       await this.audioContext.resume();
     }
 
-    this.audioUnlocked = this.audioContext.state === 'running';
+    // Prime HTML5 audio elements (required by browser autoplay policy)
+    let sfxUnlocked = false;
+    const sfx = [this.loadSound, this.hitSound, this.scoreSound];
+    for (const clip of sfx) {
+      try {
+        const prevVolume = clip.volume;
+        clip.volume = 0.001;
+        clip.currentTime = 0;
+        await clip.play();
+        clip.pause();
+        clip.currentTime = 0;
+        clip.volume = prevVolume;
+        sfxUnlocked = true;
+      } catch {
+        // Ignore — some clips may still fail until next gesture
+      }
+    }
+
+    const webAudioOk = this.audioContext?.state === 'running';
+    this.audioUnlocked = sfxUnlocked || webAudioOk;
     return this.audioUnlocked;
   }
 
@@ -66,17 +81,16 @@ class SoundManager {
   }
 
   async playWithErrorHandling(playFunction, fallbackMessage = '') {
+    if (!this.audioUnlocked) {
+      return;
+    }
+
     try {
-      if (!this.initialized) {
-        await this.init();
-      }
-      
-      // Ensure audio context is running
-      this.ensureAudioContext();
-      
       await playFunction();
     } catch (error) {
-      console.warn(`Sound playback failed: ${fallbackMessage}`, error);
+      if (error?.name !== 'NotAllowedError') {
+        console.warn(`Sound playback failed: ${fallbackMessage}`, error);
+      }
     }
   }
 
