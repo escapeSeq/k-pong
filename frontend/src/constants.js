@@ -1,5 +1,50 @@
 // Game constants
 export const STORAGE_KEY = 'pong_username';
+export const GAME_MODE_STORAGE_KEY = 'pong_game_mode';
+export const AUDIO_UNLOCKED_KEY = 'pong_audio_unlocked';
+
+export function isAudioUnlockedStored() {
+  try {
+    return sessionStorage.getItem(AUDIO_UNLOCKED_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+export function setAudioUnlockedStored() {
+  try {
+    sessionStorage.setItem(AUDIO_UNLOCKED_KEY, '1');
+  } catch {
+    // ignore
+  }
+}
+
+export function getStoredGameMode() {
+  try {
+    const mode = sessionStorage.getItem(GAME_MODE_STORAGE_KEY);
+    return mode === 'bot' || mode === 'online' ? mode : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredGameMode(mode) {
+  try {
+    if (mode === 'bot' || mode === 'online') {
+      sessionStorage.setItem(GAME_MODE_STORAGE_KEY, mode);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+export function clearStoredGameMode() {
+  try {
+    sessionStorage.removeItem(GAME_MODE_STORAGE_KEY);
+  } catch {
+    // ignore
+  }
+}
 
 // Game settings
 export const INITIAL_BALL_SPEED = 31;

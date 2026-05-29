@@ -2,7 +2,11 @@ import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import '../styles/Welcome.css';
-import { getBackendUrl } from '../constants';
+import {
+  getBackendUrl,
+  setStoredGameMode,
+  setAudioUnlockedStored,
+} from '../constants';
 import soundManager from '../utils/soundManager';
 
 const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
@@ -71,16 +75,20 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
   }, []);
 
   // Add handler to start audio after user interaction
-  const handleStartAudio = useCallback(() => {
-    if (!audioStarted) {
-      console.log('Starting audio from user interaction');
-      setShowTitle(true);
+  const handleStartAudio = useCallback(async () => {
+    if (audioStarted) {
+      return;
+    }
+    setShowTitle(true);
+    const unlocked = await soundManager.unlockFromUserGesture();
+    if (unlocked) {
+      setAudioUnlockedStored();
       soundManager.playWithErrorHandling(
         () => soundManager.playIntroSound(),
         'Intro sound failed to play'
       );
-      setAudioStarted(true);
     }
+    setAudioStarted(true);
   }, [audioStarted]);
 
   // Add effect for title animation and sound
@@ -104,7 +112,8 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
   }, [audioStarted, handleStartAudio]);
 
   const startGameWithMode = (gameMode) => {
-    const navigateToGame = (name) => {
+    const navigateToGame = async (name) => {
+      setStoredGameMode(gameMode);
       setGameState(prev => ({
         ...prev,
         gameMode,
@@ -113,6 +122,10 @@ const Welcome = ({ setGameState, savedUsername, onUsernameSet }) => {
           rating: 800
         }
       }));
+      const unlocked = await soundManager.unlockFromUserGesture();
+      if (unlocked) {
+        setAudioUnlockedStored();
+      }
       navigate('/game');
     };
 

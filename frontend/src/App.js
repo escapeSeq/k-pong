@@ -4,14 +4,14 @@ import Welcome from './components/Welcome';
 import Game from './components/Game';
 import GameOver from './components/GameOver';
 import './styles/App.css';
-import { STORAGE_KEY } from './constants';
+import { STORAGE_KEY, getStoredGameMode, clearStoredGameMode } from './constants';
 
 function App() {
-  const [gameState, setGameState] = useState({
+  const [gameState, setGameState] = useState(() => ({
     player1: null,
     player2: null,
-    gameMode: null,
-  });
+    gameMode: getStoredGameMode(),
+  }));
 
   const [username, setUsername] = useState(() => {
     // Initialize from localStorage using the same key
@@ -66,6 +66,7 @@ function App() {
               <GameOver 
                 savedUsername={username}
                 onPlayAgain={() => {
+                  clearStoredGameMode();
                   setGameState(prev => ({
                     ...prev,
                     gameMode: null,

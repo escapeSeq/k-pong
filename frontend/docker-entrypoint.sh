@@ -2,7 +2,6 @@
 set -e
 
 BACKEND_URL="${REACT_APP_BACKEND_URL:-http://localhost:5301}"
-# Strip trailing slash
 BACKEND_URL="${BACKEND_URL%/}"
 
 cat > /app/public/config.js <<EOF
