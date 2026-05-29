@@ -52,8 +52,7 @@ class SoundManager {
 
     // Prime HTML5 audio elements (required by browser autoplay policy)
     let sfxUnlocked = false;
-    const sfx = [this.loadSound, this.hitSound, this.scoreSound];
-    for (const clip of sfx) {
+    for (const clip of [this.loadSound, this.hitSound, this.scoreSound]) {
       try {
         const prevVolume = clip.volume;
         clip.volume = 0.001;
@@ -64,7 +63,7 @@ class SoundManager {
         clip.volume = prevVolume;
         sfxUnlocked = true;
       } catch {
-        // Ignore — some clips may still fail until next gesture
+        // continue
       }
     }
 

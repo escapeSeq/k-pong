@@ -2,14 +2,21 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 import '../styles/Game.css';
-import { STORAGE_KEY, getBackendUrl, INITIAL_RATING } from '../constants';
+import {
+  STORAGE_KEY,
+  getBackendUrl,
+  getStoredGameMode,
+  isAudioUnlockedStored,
+  setAudioUnlockedStored,
+  INITIAL_RATING,
+} from '../constants';
 import soundManager from '../utils/soundManager';
 
 // Add this outside of any component, at the top of the file
 let usernamePromptShownForSession = false;
 
 const Game = ({ gameState, username }) => {
-  const gameMode = gameState?.gameMode || 'online';
+  const gameMode = gameState?.gameMode || getStoredGameMode() || 'online';
   const isBotMode = gameMode === 'bot';
   const canvasRef = useRef(null);
   const socketRef = useRef(null);
@@ -43,8 +50,9 @@ const Game = ({ gameState, username }) => {
   const [isGenomeMusicActive, setIsGenomeMusicActive] = useState(false);
   const [genomeInput, setGenomeInput] = useState('');
 
-  // Add state to track if we've tried to start audio
-  const [audioStarted, setAudioStarted] = useState(false);
+  const [audioStarted, setAudioStarted] = useState(
+    () => soundManager.audioUnlocked || isAudioUnlockedStored()
+  );
 
   const drawGame = useCallback((ctx) => {
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -288,8 +296,10 @@ const Game = ({ gameState, username }) => {
       setIsWaiting(false);
       setGameData(data);
       prevGameDataRef.current = data;
-      
-      if (audioStarted && !isGenomeMusicActive) {
+
+      setAudioStarted(true);
+
+      if (soundManager.audioUnlocked && !isGenomeMusicActive) {
         soundManager.startBackgroundMusic();
       }
     });
@@ -546,38 +556,43 @@ const Game = ({ gameState, username }) => {
     }
   };
 
-  // Add a click handler to start audio after user interaction
-  const handleStartAudio = useCallback(async () => {
-    if (audioStarted) {
-      return;
-    }
+  const enableGameAudio = useCallback(async () => {
     const unlocked = await soundManager.unlockFromUserGesture();
-    if (!unlocked) {
-      return;
-    }
-    soundManager.stopAll();
-    soundManager.playLoadSound();
-    if (isGenomeMusicActive && genomeInput) {
-      soundManager.startGenomeAudio(genomeInput);
-    } else {
-      soundManager.startSimpleGenomeAudio();
+    if (unlocked) {
+      setAudioUnlockedStored();
+      soundManager.stopAll();
+      soundManager.playLoadSound();
+      if (isGenomeMusicActive && genomeInput) {
+        soundManager.startGenomeAudio(genomeInput);
+      } else {
+        soundManager.startSimpleGenomeAudio();
+      }
     }
     setAudioStarted(true);
-  }, [audioStarted, isGenomeMusicActive, genomeInput]);
+  }, [isGenomeMusicActive, genomeInput]);
 
   useEffect(() => {
     if (audioStarted) {
       return undefined;
     }
 
-    document.addEventListener('click', handleStartAudio, { once: true });
-    document.addEventListener('touchstart', handleStartAudio, { once: true });
+    const onPointer = () => {
+      enableGameAudio();
+    };
+
+    window.addEventListener('pointerdown', onPointer, { once: true, capture: true });
 
     return () => {
-      document.removeEventListener('click', handleStartAudio);
-      document.removeEventListener('touchstart', handleStartAudio);
+      window.removeEventListener('pointerdown', onPointer, { capture: true });
     };
-  }, [audioStarted, handleStartAudio]);
+  }, [audioStarted, enableGameAudio]);
+
+  useEffect(() => {
+    if (!audioStarted || !soundManager.audioUnlocked || isGenomeMusicActive || isWaiting) {
+      return;
+    }
+    soundManager.startBackgroundMusic();
+  }, [audioStarted, isGenomeMusicActive, isWaiting]);
 
   useEffect(() => {
     return () => {
@@ -630,7 +645,7 @@ const Game = ({ gameState, username }) => {
           border: '2px solid rgb(116,113,203)',
           textAlign: 'center'
         }}>
-          <button onClick={handleStartAudio} style={{
+          <button type="button" onClick={enableGameAudio} style={{
             fontFamily: 'Press Start 2P, monospace',
             fontSize: '1rem',
             padding: '15px 30px',
